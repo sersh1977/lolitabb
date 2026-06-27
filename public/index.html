@@ -456,6 +456,37 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Usuario</th><th>Acción</th><th>Detalle</th></tr></thead><tbody id="tabla-auditoria"></tbody></table></div>
       </div>
     </div>
+
+    <!-- STOCK -->
+    <div class="page-content" id="page-stock">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="filter-btn active" onclick="setFilterStock('todos',this)">Todos</button>
+      <button class="filter-btn" onclick="setFilterStock('sin-stock',this)">Sin stock</button>
+      <button class="filter-btn" onclick="setFilterStock('bajo-stock',this)">Stock bajo</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="text" id="stock-buscar" placeholder="🔍 Buscar o escanear código..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderStock()">
+      <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Nuevo producto</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
+    <div class="stat-card income"><div class="stat-label">Total productos</div><div class="stat-value" id="st-total">0</div></div>
+    <div class="stat-card" style="border-left-color:var(--warn)"><div class="stat-label">Stock bajo (≤3)</div><div class="stat-value" style="color:var(--warn)" id="st-bajo">0</div></div>
+    <div class="stat-card" style="border-left-color:var(--danger)"><div class="stat-label">Sin stock</div><div class="stat-value" style="color:var(--danger)" id="st-sin">0</div></div>
+    <div class="stat-card"><div class="stat-label">Valor total stock</div><div class="stat-value money-val" id="st-valor">$0</div></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Código</th><th>Nombre</th><th>Talle</th><th>Color</th>
+        <th>Precio</th><th>Stock</th><th>Acciones</th>
+      </tr></thead>
+      <tbody id="tabla-stock"></tbody>
+    </table>
+  </div>
+    </div>
+
   </div>
 </div>
 
@@ -1002,7 +1033,8 @@ async function guardarIngreso() {
     else tipo='tarjeta';
   }
 
-  const reg = { id:Date.now(), concepto, monto, fecha, tipo, banco, modalidad, notas, usuario:session.username };
+  const hora = new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+  const reg = { id:Date.now(), concepto, monto, fecha, hora, tipo, banco, modalidad, notas, usuario:session.username };
   if (tipo==='cuotas') {
     reg.cuotas = cuotasCant;
     reg.montoCuota = +(monto/cuotasCant).toFixed(2);
@@ -1484,7 +1516,7 @@ function renderIngresos() {
   document.getElementById('tabla-ingresos').innerHTML=data.length===0
     ? `<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:32px">Sin ingresos en este período</td></tr>`
     : items.map(r=>`<tr>
-        <td>${fmtDate(r.fecha)}</td>
+        <td>${fmtDate(r.fecha)}${r.hora?`<br><span style='font-size:11px;color:var(--text-soft)'>${r.hora}</span>`:''}</td>
         <td>${r.concepto}${r.notas?`<br><span style="font-size:11px;color:var(--text-soft)">${r.notas}</span>`:''}</td>
         <td>${tipoTag(r.tipo,r.banco,r.modalidad)}</td>
         <td>${r.cuotas?`${r.cuotas}x cuotas`:'—'}</td>
@@ -1525,7 +1557,7 @@ function renderGastos() {
   document.getElementById('tabla-gastos').innerHTML=data.length===0
     ? `<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:32px">Sin gastos en este período</td></tr>`
     : itemsG.map(r=>`<tr>
-        <td>${fmtDate(r.fecha)}</td>
+        <td>${fmtDate(r.fecha)}${r.hora?`<br><span style='font-size:11px;color:var(--text-soft)'>${r.hora}</span>`:''}</td>
         <td>${r.concepto}${r.notas?`<br><span style="font-size:11px;color:var(--text-soft)">${r.notas}</span>`:''}</td>
         <td>${catTag(r.categoria)}</td>
         <td class="amount-neg">${moneySpan(r.monto)}</td>
@@ -2179,35 +2211,7 @@ async function confirmarVentaProductos() {
 iniciarApp();
 </script>
 
-<!-- PÁGINA STOCK -->
-<div class="page-content" id="page-stock">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="filter-btn active" onclick="setFilterStock('todos',this)">Todos</button>
-      <button class="filter-btn" onclick="setFilterStock('sin-stock',this)">Sin stock</button>
-      <button class="filter-btn" onclick="setFilterStock('bajo-stock',this)">Stock bajo</button>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="text" id="stock-buscar" placeholder="🔍 Buscar o escanear código..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderStock()">
-      <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Nuevo producto</button>
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
-    <div class="stat-card income"><div class="stat-label">Total productos</div><div class="stat-value" id="st-total">0</div></div>
-    <div class="stat-card" style="border-left-color:var(--warn)"><div class="stat-label">Stock bajo (≤3)</div><div class="stat-value" style="color:var(--warn)" id="st-bajo">0</div></div>
-    <div class="stat-card" style="border-left-color:var(--danger)"><div class="stat-label">Sin stock</div><div class="stat-value" style="color:var(--danger)" id="st-sin">0</div></div>
-    <div class="stat-card"><div class="stat-label">Valor total stock</div><div class="stat-value money-val" id="st-valor">$0</div></div>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr>
-        <th>Código</th><th>Nombre</th><th>Talle</th><th>Color</th>
-        <th>Precio</th><th>Stock</th><th>Acciones</th>
-      </tr></thead>
-      <tbody id="tabla-stock"></tbody>
-    </table>
-  </div>
-</div>
+
 
 <!-- MODAL NUEVO PRODUCTO -->
 <div class="modal-overlay" id="modal-producto">
