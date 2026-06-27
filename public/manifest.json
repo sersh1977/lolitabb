@@ -1,0 +1,26 @@
+{
+  "name": "Coffee Babys & Kids — Flow Manager",
+  "short_name": "CoffeeB&K",
+  "description": "Sistema de gestión financiera para Coffee Babys and Kids",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#3D2314",
+  "theme_color": "#3D2314",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business"],
+  "lang": "es"
+}

@@ -1,0 +1,24 @@
+# Secretos — NUNCA subir a GitHub
+.env
+api-token.txt
+
+# Datos de producción — se mantienen en el servidor Railway, no en Git
+data.json
+data.json.bak
+
+# Backups locales
+backups/
+
+# Windows
+*.bat
+*.url
+cloudflared.exe
+config.yml
+INSTRUCCIONES.txt
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
