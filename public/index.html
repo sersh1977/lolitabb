@@ -485,6 +485,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <tbody id="tabla-stock"></tbody>
     </table>
   </div>
+  <div id="stock-paginacion"></div>
     </div>
 
   </div>
@@ -1123,7 +1124,8 @@ async function guardarGasto() {
   const cat=document.getElementById('gast-cat').value;
   const notas=document.getElementById('gast-notas').value.trim();
   if (!concepto||isNaN(monto)||monto<=0||!fecha) { toast('Completá todos los campos obligatorios.','error'); return; }
-  db.gastos.push({ id:Date.now(), concepto, monto, fecha, categoria:cat, notas, usuario:session.username });
+  const horaG = new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+  db.gastos.push({ id:Date.now(), concepto, monto, fecha, hora:horaG, categoria:cat, notas, usuario:session.username });
   logAudit('GASTO_NUEVO',`${concepto} — $${monto} — ${cat}`);
   await saveDB();
   closeModal('modal-gasto');
@@ -1944,10 +1946,14 @@ let carritoVenta = []; // [{producto, cantidad}]
 
 function setFilterStock(f, btn) {
   filterStock = f;
+  paginaStock = 1;
   document.querySelectorAll('#page-stock .filter-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderStock();
 }
+
+let paginaStock = 1;
+const STOCK_POR_PAGINA = 50;
 
 function renderStock() {
   if (!db.stock) db.stock = [];
@@ -1956,14 +1962,17 @@ function renderStock() {
   let items = db.stock;
   if (filterStock === 'sin-stock') items = items.filter(p => p.cantidad <= 0);
   else if (filterStock === 'bajo-stock') items = items.filter(p => p.cantidad > 0 && p.cantidad <= 3);
-  if (buscar) items = items.filter(p =>
-    (p.codigo||'').toLowerCase().includes(buscar) ||
-    (p.nombre||'').toLowerCase().includes(buscar) ||
-    (p.talle||'').toLowerCase().includes(buscar) ||
-    (p.color||'').toLowerCase().includes(buscar)
-  );
+  if (buscar) {
+    items = items.filter(p =>
+      (p.codigo||'').toLowerCase().includes(buscar) ||
+      (p.nombre||'').toLowerCase().includes(buscar) ||
+      (p.talle||'').toLowerCase().includes(buscar) ||
+      (p.color||'').toLowerCase().includes(buscar)
+    );
+    paginaStock = 1; // reset page on search
+  }
 
-  // Stats
+  // Stats (always from full stock)
   const total = db.stock.length;
   const bajo = db.stock.filter(p => p.cantidad > 0 && p.cantidad <= 3).length;
   const sin = db.stock.filter(p => p.cantidad <= 0).length;
@@ -1979,11 +1988,21 @@ function renderStock() {
 
   const tbody = document.getElementById('tabla-stock');
   if (!tbody) return;
+  
   if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-soft)">No hay productos. Agregá el primero con "+ Nuevo producto"</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-soft)">No se encontraron productos.</td></tr>';
+    const pg = document.getElementById('stock-paginacion');
+    if (pg) pg.innerHTML = '';
     return;
   }
-  tbody.innerHTML = items.map(p => {
+
+  // Pagination
+  const totalPags = Math.ceil(items.length / STOCK_POR_PAGINA);
+  if (paginaStock > totalPags) paginaStock = totalPags;
+  const desde = (paginaStock - 1) * STOCK_POR_PAGINA;
+  const pagItems = items.slice(desde, desde + STOCK_POR_PAGINA);
+
+  tbody.innerHTML = pagItems.map(p => {
     const stockClass = p.cantidad <= 0 ? 'stock-sin' : p.cantidad <= 3 ? 'stock-bajo' : 'stock-ok';
     const stockLabel = p.cantidad <= 0 ? 'Sin stock' : p.cantidad <= 3 ? 'Stock bajo' : 'En stock';
     return `<tr>
@@ -1999,9 +2018,30 @@ function renderStock() {
       </td>
     </tr>`;
   }).join('');
+
+  // Pagination controls
+  const pg = document.getElementById('stock-paginacion');
+  if (pg) {
+    const mostrando = `${desde+1}–${Math.min(desde+STOCK_POR_PAGINA, items.length)} de ${items.length}`;
+    pg.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;color:var(--text-mid)">
+        <span>${mostrando}</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost" style="padding:4px 12px" onclick="cambiarPaginaStock(-1)" ${paginaStock<=1?'disabled':''}>← Ant</button>
+          <span style="padding:4px 10px;background:var(--cream-dark);border-radius:var(--radius-sm)">${paginaStock}/${totalPags}</span>
+          <button class="btn btn-ghost" style="padding:4px 12px" onclick="cambiarPaginaStock(1)" ${paginaStock>=totalPags?'disabled':''}>Sig →</button>
+        </div>
+      </div>`;
+  }
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function cambiarPaginaStock(delta) {
+  paginaStock += delta;
+  renderStock();
+  document.getElementById('page-stock')?.scrollTo(0,0);
+}
 
 async function guardarProducto() {
   const codigo = document.getElementById('prod-codigo').value.trim();
