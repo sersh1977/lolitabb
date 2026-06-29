@@ -738,7 +738,7 @@ async function loadDB() {
 
   if (!db.auditLog) db.auditLog = [];
   if (!db.ingresos) db.ingresos = [];
-  if (!db.stock) db.stock = [];
+  if (!db.stock || !Array.isArray(db.stock)) db.stock = [];
   if (!db.gastos) db.gastos = [];
   if (!db.configPagos || Object.keys(db.configPagos).length === 0)
     db.configPagos = JSON.parse(JSON.stringify(DEFAULT_CONFIG_PAGOS));
