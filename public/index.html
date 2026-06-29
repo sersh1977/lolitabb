@@ -726,7 +726,11 @@ async function loadDB() {
   if (dbServidor) {
     db = dbServidor;
     if (!db.auditLog) db.auditLog = [];
-    localStorage.setItem('cbk_db', JSON.stringify(db));
+    // Guardar en localStorage sin stock (puede ser muy grande)
+    try {
+      const dbParaCache = {...db, stock: []};
+      localStorage.setItem('cbk_db', JSON.stringify(dbParaCache));
+    } catch(e) {}
   } else {
     const raw = localStorage.getItem('cbk_db');
     if (raw) { try { db = JSON.parse(raw); } catch(e) {} }
