@@ -137,10 +137,21 @@ tr:hover td{background:var(--cream)}
 .tag-servicio{background:#E8F5FE;color:#1976D2}
 .tag-producto{background:var(--success-light);color:var(--mint-dark)}
 .tag-otro{background:var(--cream-dark);color:var(--sand)}
+.tag-devolucion{background:#FFF3CD;color:#856404}
 .tag-acreditado{background:var(--success-light);color:var(--mint-dark)}
 .tag-pendiente{background:var(--warn-light);color:var(--warn)}
 .tag-admin{background:#F0E8FE;color:#7B3FC4}
 .tag-operador{background:var(--cream-dark);color:var(--text-mid)}
+
+/* DEVOLUCION */
+.dev-prod-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;transition:opacity .2s}
+.dev-prod-info{flex:1}
+.dev-prod-qty{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:12px}
+.dev-prod-qty label{font-size:12px}
+.dev-cant{min-width:20px;text-align:center;font-weight:600;font-size:15px}
+.dev-check{cursor:pointer;font-size:16px;background:var(--cream-dark);border:none;border-radius:4px;padding:2px 6px}
+.qty-btn{background:var(--cream-dark);border:none;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.qty-btn:hover{background:var(--coffee-light);color:var(--white)}
 
 /* FILTERS */
 .filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -1043,6 +1054,10 @@ async function guardarIngreso() {
     reg.cuotas = cuotasCant;
     reg.montoCuota = +(monto/cuotasCant).toFixed(2);
   }
+  if (ventaProductosActual.length) {
+    reg.productos = ventaProductosActual;
+    ventaProductosActual = [];
+  }
 
   db.ingresos.push(reg);
   logAudit('INGRESO_NUEVO', `${concepto} — $${monto} — ${tipo}`);
@@ -1354,8 +1369,8 @@ function tipoTag(tipo,banco,modalidad) {
   return tipo;
 }
 function catTag(cat) {
-  const map={proveedor:'tag-proveedor',alquiler:'tag-alquiler',producto:'tag-producto',servicio:'tag-servicio',otro:'tag-otro'};
-  const labels={proveedor:'Proveedor',alquiler:'Alquiler',producto:'Producto',servicio:'Servicio',otro:'Otro'};
+  const map={proveedor:'tag-proveedor',alquiler:'tag-alquiler',producto:'tag-producto',servicio:'tag-servicio',devolucion:'tag-devolucion',otro:'tag-otro'};
+  const labels={proveedor:'Proveedor',alquiler:'Alquiler',producto:'Producto',servicio:'Servicio',devolucion:'↩ Devolución',otro:'Otro'};
   return `<span class="tag ${map[cat]||'tag-otro'}">${labels[cat]||cat}</span>`;
 }
 function tipoTagTexto(tipo,banco,modalidad) {
@@ -1364,7 +1379,7 @@ function tipoTagTexto(tipo,banco,modalidad) {
   return `${BANCO_LABELS[banco]||banco||'Tarjeta'}${modalidad?' · '+modalidad:''}`;
 }
 function catTagTexto(cat) {
-  return {proveedor:'Proveedor',alquiler:'Alquiler',producto:'Producto',servicio:'Servicio',otro:'Otro'}[cat]||cat;
+  return {proveedor:'Proveedor',alquiler:'Alquiler',producto:'Producto',servicio:'Servicio',devolucion:'↩ Devolución',otro:'Otro'}[cat]||cat;
 }
 
 // ══════════════════════════════════════
@@ -1527,8 +1542,9 @@ function renderIngresos() {
         <td>${r.cuotas?`${r.cuotas}x cuotas`:'—'}</td>
         <td class="amount-pos">${moneySpan(r.monto)}</td>
         <td style="white-space:nowrap">
-          <button onclick="abrirModIngreso(${r.id})" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:12px;margin-right:4px">✏ Modificar</button>
-          ${canElim?`<button onclick="eliminarIngreso(${r.id})" style="padding:4px 10px;border-radius:6px;border:1px solid var(--danger-light);background:var(--danger-light);color:var(--danger);cursor:pointer;font-size:12px">✕ Eliminar</button>`:''}
+          ${r.productos?`<button onclick="abrirDevolucionIngreso(${r.id})" style="padding:4px 10px;border-radius:6px;border:1px solid var(--mint-dark);background:var(--mint-dark);color:var(--white);cursor:pointer;font-size:12px;margin-right:4px" title="Devolución / Cambio">↩</button>`:''}
+          <button onclick="abrirModIngreso(${r.id})" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-size:12px;margin-right:4px">✏</button>
+          ${canElim?`<button onclick="eliminarIngreso(${r.id})" style="padding:4px 10px;border-radius:6px;border:1px solid var(--danger-light);background:var(--danger-light);color:var(--danger);cursor:pointer;font-size:12px">✕</button>`:''}
         </td>
       </tr>`).join('');
   renderPaginador('ingresos', totalPaginas, pag, totalItems);
@@ -1946,6 +1962,9 @@ async function iniciarApp() {
 // ══════════════════════════════════════
 let filterStock = 'todos';
 let carritoVenta = []; // [{producto, cantidad}]
+let carritoCambio = [];
+let ventaProductosActual = [];
+let devolucionIngresoOrigen = null;
 
 function setFilterStock(f, btn) {
   filterStock = f;
@@ -2018,6 +2037,7 @@ function renderStock() {
       <td>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editarProducto('${p.id}')">✏</button>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:#2e7d32" onclick="ajusteStock('${p.id}')">±</button>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:#b8860b" onclick="abrirDevolucionStock('${p.id}')" title="Devolución rápida">↩</button>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--danger)" onclick="eliminarProducto('${p.id}')">🗑</button>
       </td>
     </tr>`;
@@ -2247,6 +2267,17 @@ async function confirmarVentaProductos() {
     if (p) p.cantidad = Math.max(0, p.cantidad - item.cantidad);
   });
 
+  // Guardar productos vendidos para vincularlos al ingreso
+  ventaProductosActual = carritoVenta.map(item => ({
+    id: item.producto.id,
+    codigo: item.producto.codigo,
+    nombre: item.producto.nombre,
+    talle: item.producto.talle || '',
+    color: item.producto.color || '',
+    cantidad: item.cantidad,
+    precio: item.precioUsado || 0
+  }));
+
   // Actualizar monto en el modal de ingreso
   document.getElementById('ing-monto').value = total.toFixed(2);
   const conceptoEl = document.getElementById('ing-concepto');
@@ -2299,6 +2330,267 @@ function autoSelectSiUnico() {
   if (exacto) { agregarAlCarrito(exacto.id); return; }
   const res = db.stock.filter(p => p.cantidad > 0 && (p.codigo||'').toLowerCase().includes(q.toLowerCase()));
   if (res.length === 1) agregarAlCarrito(res[0].id);
+}
+
+// ── DEVOLUCIÓN / CAMBIO ─────────────────────────────────────────────────
+function abrirDevolucionIngreso(id) {
+  const ingreso = db.ingresos.find(x => x.id === id);
+  if (!ingreso || !ingreso.productos || !ingreso.productos.length) {
+    toast('Este ingreso no tiene productos vinculados.', 'error');
+    return;
+  }
+  devolucionIngresoOrigen = id;
+  carritoCambio = [];
+  const cont = document.getElementById('dev-productos');
+  cont.innerHTML = ingreso.productos.map((p, i) => `
+    <div class="dev-prod-item" data-index="${i}">
+      <div class="dev-prod-info">
+        <strong>${esc(p.nombre)}</strong>
+        <span style="color:var(--text-soft);font-size:12px">${esc(p.talle)} ${esc(p.color)}</span>
+        <div style="font-size:12px;color:var(--text-mid)">Cód: <code>${esc(p.codigo)}</code> | Vendido: <strong>${p.cantidad}</strong> x ${fmtMoney(p.precio)}</div>
+      </div>
+      <div class="dev-prod-qty">
+        <label style="font-size:12px;color:var(--text-soft)">Devolver:</label>
+        <button class="qty-btn" onclick="cambiarDevCant(${i},-1)">−</button>
+        <span class="dev-cant" id="dev-cant-${i}">${p.cantidad}</span>
+        <button class="qty-btn" onclick="cambiarDevCant(${i},1)">+</button>
+        <button class="qty-btn dev-check" onclick="toggleDevItem(${i})" id="dev-check-${i}" data-active="true">☑</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('dev-ingreso-info').innerHTML =
+    `<strong>${fmtDate(ingreso.fecha)}</strong> — ${esc(ingreso.concepto)} <span style="color:var(--text-soft)">| $${fmtMoney(ingreso.monto)}</span>`;
+  document.getElementById('dev-motivo').value = '';
+  document.getElementById('dev-resultados-cambio').style.display = 'none';
+  document.getElementById('dev-carrito-cambio').innerHTML = '<div style="color:var(--text-soft);font-size:13px;padding:8px;text-align:center">Sin productos de cambio</div>';
+  document.getElementById('dev-buscar-cambio').value = '';
+  renderDevTotal();
+  openModal('modal-devolucion');
+}
+
+function cambiarDevCant(i, delta) {
+  if (!devolucionIngresoOrigen) return;
+  const ingreso = db.ingresos.find(x => x.id === devolucionIngresoOrigen);
+  if (!ingreso) return;
+  const p = ingreso.productos[i];
+  if (!p) return;
+  const el = document.getElementById('dev-cant-' + i);
+  const actual = parseInt(el.textContent) || 0;
+  const nueva = Math.max(0, Math.min(p.cantidad, actual + delta));
+  el.textContent = nueva;
+  renderDevTotal();
+}
+
+function toggleDevItem(i) {
+  const check = document.getElementById('dev-check-' + i);
+  if (!check) return;
+  const active = check.getAttribute('data-active') === 'true';
+  check.setAttribute('data-active', active ? 'false' : 'true');
+  check.textContent = active ? '☐' : '☑';
+  const item = check.closest('.dev-prod-item');
+  if (item) item.style.opacity = active ? '0.5' : '1';
+  renderDevTotal();
+}
+
+function renderDevTotal() {
+  if (!devolucionIngresoOrigen) return;
+  const ingreso = db.ingresos.find(x => x.id === devolucionIngresoOrigen);
+  if (!ingreso) return;
+  let totalDev = 0;
+  ingreso.productos.forEach((p, i) => {
+    const check = document.getElementById('dev-check-' + i);
+    if (!check || check.getAttribute('data-active') !== 'true') return;
+    const cant = parseInt(document.getElementById('dev-cant-' + i)?.textContent) || 0;
+    totalDev += cant * p.precio;
+  });
+  const totalCambio = carritoCambio.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
+  document.getElementById('dev-total-devolver').textContent = fmtMoney(totalDev);
+  document.getElementById('dev-total-cambio').textContent = fmtMoney(totalCambio);
+  document.getElementById('dev-total-neto').textContent = fmtMoney(Math.max(0, totalDev - totalCambio));
+}
+
+function buscarProductoCambio() {
+  if (!devolucionIngresoOrigen) return;
+  const q = document.getElementById('dev-buscar-cambio').value.toLowerCase().trim();
+  const cont = document.getElementById('dev-resultados-cambio');
+  if (!q) { cont.style.display = 'none'; return; }
+  const resultados = (db.stock || []).filter(p =>
+    p.cantidad > 0 && (
+      (p.codigo||'').toLowerCase().includes(q) ||
+      (p.nombre||'').toLowerCase().includes(q) ||
+      (p.talle||'').toLowerCase().includes(q) ||
+      (p.color||'').toLowerCase().includes(q)
+    )
+  ).slice(0, 8);
+  if (!resultados.length) {
+    cont.innerHTML = '<div style="padding:8px;color:var(--text-soft);font-size:13px;text-align:center">Sin resultados</div>';
+    cont.style.display = 'block'; return;
+  }
+  cont.innerHTML = resultados.map(p =>
+    `<div class="prod-result-item" onclick="agregarAlCarritoCambio('${p.id}')">
+      <div><strong>${esc(p.nombre)}</strong><span style="color:var(--text-soft);margin-left:8px">${esc(p.talle||'')} ${esc(p.color||'')}</span>
+      <br><code style="font-size:11px">${esc(p.codigo)}</code></div>
+      <div style="text-align:right"><div style="font-weight:500;color:var(--coffee)">${fmtMoney(p.precio||0)}</div>
+      <div style="font-size:11px;color:var(--text-soft)">Stock: ${p.cantidad}</div></div>
+    </div>`
+  ).join('');
+  cont.style.display = 'block';
+}
+
+function agregarAlCarritoCambio(prodId) {
+  const p = db.stock.find(x => x.id === prodId);
+  if (!p) return;
+  const existente = carritoCambio.find(x => x.producto.id === prodId);
+  if (existente) {
+    if (existente.cantidad >= p.cantidad) { toast(`Solo hay ${p.cantidad} en stock.`, 'error'); return; }
+    existente.cantidad++;
+  } else {
+    carritoCambio.push({ producto: p, cantidad: 1, precioUsado: p.precio || 0 });
+  }
+  document.getElementById('dev-buscar-cambio').value = '';
+  document.getElementById('dev-resultados-cambio').style.display = 'none';
+  renderCarritoCambio();
+}
+
+function renderCarritoCambio() {
+  const cont = document.getElementById('dev-carrito-cambio');
+  if (!carritoCambio.length) {
+    cont.innerHTML = '<div style="color:var(--text-soft);font-size:13px;padding:8px;text-align:center">Sin productos de cambio</div>';
+    renderDevTotal(); return;
+  }
+  cont.innerHTML = carritoCambio.map((item, i) =>
+    `<div class="carrito-item">
+      <div class="carrito-item-info">
+        <strong>${esc(item.producto.nombre)}</strong>
+        <span style="color:var(--text-soft);font-size:12px">${esc(item.producto.talle||'')} ${esc(item.producto.color||'')}</span>
+        <div style="font-size:12px;color:var(--coffee)">${fmtMoney(item.precioUsado)} c/u</div>
+      </div>
+      <div class="carrito-item-qty">
+        <button class="qty-btn" onclick="cambiarCantCambio(${i},-1)">−</button>
+        <span style="min-width:20px;text-align:center;font-weight:500">${item.cantidad}</span>
+        <button class="qty-btn" onclick="cambiarCantCambio(${i},1)">+</button>
+        <button class="qty-btn" style="color:var(--danger)" onclick="carritoCambio.splice(${i},1);renderCarritoCambio()">✕</button>
+      </div>
+    </div>`
+  ).join('');
+  renderDevTotal();
+}
+
+function cambiarCantCambio(i, delta) {
+  const item = carritoCambio[i];
+  if (!item) return;
+  const nueva = item.cantidad + delta;
+  if (nueva <= 0) { carritoCambio.splice(i, 1); }
+  else if (nueva > item.producto.cantidad) { toast(`Solo hay ${item.producto.cantidad} en stock.`, 'error'); return; }
+  else { item.cantidad = nueva; }
+  renderCarritoCambio();
+}
+
+async function confirmarDevolucion() {
+  if (!devolucionIngresoOrigen) return;
+  const ingreso = db.ingresos.find(x => x.id === devolucionIngresoOrigen);
+  if (!ingreso) return;
+
+  // Verificar que haya al menos algo devuelto
+  let hayDev = false;
+  const devueltos = [];
+  ingreso.productos.forEach((p, i) => {
+    const check = document.getElementById('dev-check-' + i);
+    if (!check || check.getAttribute('data-active') !== 'true') return;
+    const cant = parseInt(document.getElementById('dev-cant-' + i)?.textContent) || 0;
+    if (cant > 0) { hayDev = true; devueltos.push({ ...p, cantidadDevuelta: cant }); }
+  });
+
+  if (!hayDev) { toast('Seleccioná al menos un producto para devolver.', 'error'); return; }
+  const motivo = document.getElementById('dev-motivo').value.trim() || 'Devolución';
+
+  // 1. Sumar al stock los productos devueltos
+  devueltos.forEach(dev => {
+    const prod = db.stock.find(x => x.id === dev.id) || db.stock.find(x => x.codigo === dev.codigo);
+    if (prod) prod.cantidad += dev.cantidadDevuelta;
+  });
+
+  const totalDevuelto = devueltos.reduce((s, d) => s + d.cantidadDevuelta * d.precio, 0);
+
+  // 2. Descontar del stock los productos de cambio (si hay)
+  let totalCambio = 0;
+  if (carritoCambio.length) {
+    carritoCambio.forEach(item => {
+      const prod = db.stock.find(x => x.id === item.producto.id);
+      if (prod) prod.cantidad = Math.max(0, prod.cantidad - item.cantidad);
+    });
+    totalCambio = carritoCambio.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
+  }
+
+  const neto = Math.max(0, totalDevuelto - totalCambio);
+
+  // 3. Crear gasto por devolución (si hay monto a devolver)
+  if (neto > 0) {
+    const detalleDev = devueltos.map(d => `${d.nombre} x${d.cantidadDevuelta}`).join(', ');
+    const detalleCambio = carritoCambio.length ? ` | Cambio: ${carritoCambio.map(c => `${c.producto.nombre} x${c.cantidad}`).join(', ')}` : '';
+    db.gastos.push({
+      id: Date.now(),
+      concepto: `Devolución: ${detalleDev}`,
+      monto: neto,
+      fecha: new Date().toISOString().split('T')[0],
+      hora: new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'}),
+      categoria: 'devolucion',
+      notas: `Ingreso origen #${ingreso.id} | ${ingreso.concepto}${detalleCambio}${motivo ? ' | ' + motivo : ''}`,
+      usuario: session.username
+    });
+  }
+
+  // 4. Auditoría
+  const detalleAudit = devueltos.map(d => `${d.nombre} x${d.cantidadDevuelta}`).join(', ');
+  const cambioAudit = carritoCambio.length ? ` + Cambio: ${carritoCambio.map(c => `${c.producto.nombre} x${c.cantidad}`).join(', ')}` : '';
+  logAudit('STOCK_DEVOLUCION', `${detalleAudit} — $${fmtMoney(neto)}${cambioAudit}${motivo ? ' | ' + motivo : ''}`);
+
+  await saveDB();
+  closeModal('modal-devolucion');
+  devolucionIngresoOrigen = null;
+  carritoCambio = [];
+  renderStock();
+  renderPage('ingresos');
+  toast(neto > 0 ? `Devolución registrada. Gasto: ${fmtMoney(neto)} ✓` : 'Cambio registrado ✓', 'success');
+}
+
+// ── DEVOLUCIÓN RÁPIDA DESDE STOCK ──────────────────────────────────────
+function abrirDevolucionStock(prodId) {
+  const p = db.stock.find(x => x.id === prodId);
+  if (!p) return;
+  document.getElementById('dev-stock-prod-id').value = prodId;
+  document.getElementById('dev-stock-prod-info').innerHTML =
+    `<strong>${esc(p.nombre)}</strong> — ${esc(p.talle||'')} ${esc(p.color||'')} | Stock actual: <strong>${p.cantidad}</strong>`;
+  document.getElementById('dev-stock-cantidad').value = 1;
+  document.getElementById('dev-stock-motivo').value = '';
+  openModal('modal-devolver-stock');
+}
+
+async function confirmarDevolucionStock() {
+  const prodId = document.getElementById('dev-stock-prod-id').value;
+  const cant = parseInt(document.getElementById('dev-stock-cantidad').value) || 0;
+  const motivo = document.getElementById('dev-stock-motivo').value.trim() || 'Devolución rápida';
+  if (cant <= 0) { toast('Cantidad inválida.', 'error'); return; }
+  const p = db.stock.find(x => x.id === prodId);
+  if (!p) return;
+  p.cantidad += cant;
+  const monto = (p.precio || 0) * cant;
+  db.gastos.push({
+    id: Date.now(),
+    concepto: `Devolución rápida: ${p.nombre} x${cant}`,
+    monto: monto,
+    fecha: new Date().toISOString().split('T')[0],
+    hora: new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'}),
+    categoria: 'devolucion',
+    notas: motivo,
+    usuario: session.username
+  });
+  logAudit('STOCK_DEVOLUCION', `${p.nombre} (${p.codigo}) x${cant} — $${fmtMoney(monto)} | ${motivo}`);
+  closeModal('modal-devolver-stock');
+  await saveDB();
+  renderStock();
+  toast(`Devolución: ${p.nombre} x${cant} → stock +${cant}, gasto ${fmtMoney(monto)} ✓`, 'success');
 }
 
 iniciarApp();
@@ -2412,6 +2704,61 @@ iniciarApp();
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-ajuste-stock')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarAjusteStock()">Confirmar ajuste</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DEVOLUCIÓN / CAMBIO -->
+<div class="modal-overlay" id="modal-devolucion">
+  <div class="modal" style="max-width:650px">
+    <div class="modal-header"><h3>↩ Devolución / Cambio</h3><button class="modal-close" onclick="closeModal('modal-devolucion')">✕</button></div>
+    <div class="modal-body">
+      <div id="dev-ingreso-info" style="background:var(--cream-dark);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px"></div>
+
+      <label style="font-size:13px;font-weight:600;color:var(--text-main);display:block;margin-bottom:8px">📦 Productos a devolver</label>
+      <div id="dev-productos"></div>
+
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+        <label style="font-size:13px;font-weight:600;color:var(--text-main);display:block;margin-bottom:8px">🔄 Cambio por otro producto <span style="font-weight:400;color:var(--text-soft);font-size:12px">(opcional — buscá el producto nuevo)</span></label>
+        <input type="text" id="dev-buscar-cambio" placeholder="Escanear código o escribir nombre..." oninput="buscarProductoCambio()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:monospace" autocomplete="off">
+        <div id="dev-resultados-cambio" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin:8px 0;display:none"></div>
+        <div id="dev-carrito-cambio" style="min-height:40px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);padding:8px;margin-top:8px;font-size:13px"></div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label>Motivo (opcional)</label>
+        <input type="text" id="dev-motivo" placeholder="Ej: Cambio de talle, defecto, etc.">
+      </div>
+
+      <div style="display:flex;justify-content:space-between;background:var(--cream-dark);border-radius:var(--radius-sm);padding:12px 16px;margin-top:10px;font-size:14px">
+        <div><span style="color:var(--text-soft)">Devuelto:</span> <strong style="color:var(--mint-dark)" id="dev-total-devolver">$0</strong></div>
+        <div><span style="color:var(--text-soft)">Cambio:</span> <strong style="color:var(--rose-dark)" id="dev-total-cambio">$0</strong></div>
+        <div><span style="color:var(--text-soft)">Neto a devolver:</span> <strong style="color:var(--coffee)" id="dev-total-neto">$0</strong></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-devolucion')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDevolucion()">Confirmar devolución</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DEVOLUCIÓN RÁPIDA (DESDE STOCK) -->
+<div class="modal-overlay" id="modal-devolver-stock">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><h3>↩ Devolución rápida</h3><button class="modal-close" onclick="closeModal('modal-devolver-stock')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="dev-stock-prod-id">
+      <div id="dev-stock-prod-info" style="background:var(--cream-dark);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px"></div>
+      <div class="form-group"><label>Cantidad a devolver</label><input type="number" id="dev-stock-cantidad" min="1" value="1"></div>
+      <div class="form-group"><label>Motivo (opcional)</label><input type="text" id="dev-stock-motivo" placeholder="Ej: Devolución cliente"></div>
+      <div style="background:var(--warn-light);border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--text-mid)">
+        ⚡ Se creará un gasto por el valor del producto y se reingresará al stock.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-devolver-stock')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDevolucionStock()">Confirmar y reingresar</button>
     </div>
   </div>
 </div>
