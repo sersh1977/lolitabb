@@ -840,19 +840,6 @@ function initApp() {
   document.getElementById('ing-fecha').valueAsDate = new Date();
   document.getElementById('gast-fecha').valueAsDate = new Date();
   actualizarIndicadorSync();
-  // Event delegation para botones de stock (más robusto que onclick inline)
-  document.getElementById('tabla-stock')?.addEventListener('click', function(e) {
-    const btn = e.target.closest('.stock-btn');
-    if (!btn) return;
-    const action = btn.getAttribute('data-action');
-    const id = btn.getAttribute('data-id');
-    if (!action || !id) { toast('DEBUG: btn sin data-action/id','error'); return; }
-    if (action === 'editar') editarProducto(id);
-    else if (action === 'ajuste') ajusteStock(id);
-    else if (action === 'devolucion') abrirDevolucionStock(id);
-    else if (action === 'eliminar') eliminarProducto(id);
-    else toast('DEBUG: acción desconocida: '+action,'error');
-  });
   goTo('dashboard');
 }
 
@@ -2070,9 +2057,18 @@ function renderStock() {
         </div>
       </div>`;
   }
-  // Event delegation para botones de stock (más robusto que onclick)
-  contenedorStock = document.getElementById('tabla-stock');
-  if (contenedorStock) contenedorStock._stockListenersAttached = true;
+  // Bind directo a cada botón después de renderizar
+  document.querySelectorAll('#tabla-stock .stock-btn').forEach(btn => {
+    const action = btn.getAttribute('data-action');
+    const id = btn.getAttribute('data-id');
+    if (!action || !id) return;
+    btn.onclick = function(e) {
+      if (action === 'editar') editarProducto(id);
+      else if (action === 'ajuste') ajusteStock(id);
+      else if (action === 'devolucion') abrirDevolucionStock(id);
+      else if (action === 'eliminar') eliminarProducto(id);
+    };
+  });
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
