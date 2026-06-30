@@ -881,7 +881,11 @@ function renderPage(page) {
 //  MODALES
 // ══════════════════════════════════════
 function openModal(id) {
-  document.getElementById(id).classList.add('open');
+  const el = document.getElementById(id);
+  console.log('[MODAL] openModal llamado:', id, el ? 'EXISTE' : 'NO_EXISTE');
+  if (!el) return;
+  el.classList.add('open');
+  console.log('[MODAL] clase open agregada, display:', getComputedStyle(el).display);
   if (id==='modal-ingreso') {
     poblarConceptosIngreso();
     const c = document.getElementById('ing-concepto');
