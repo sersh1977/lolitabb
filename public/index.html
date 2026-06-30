@@ -2057,12 +2057,16 @@ function renderStock() {
         </div>
       </div>`;
   }
-  // Bind directo a cada botón después de renderizar
-  document.querySelectorAll('#tabla-stock .stock-btn').forEach(btn => {
+  // Debug: bind directo a cada botón
+  console.log('[STOCK] renderStock ejecutado, productos:', pagItems.length);
+  const btns = document.querySelectorAll('#tabla-stock .stock-btn');
+  console.log('[STOCK] botones encontrados:', btns.length);
+  btns.forEach(btn => {
     const action = btn.getAttribute('data-action');
     const id = btn.getAttribute('data-id');
-    if (!action || !id) return;
+    if (!action || !id) { console.warn('[STOCK] btn sin data:', btn.outerHTML); return; }
     btn.onclick = function(e) {
+      console.log('[STOCK] click:', action, id);
       if (action === 'editar') editarProducto(id);
       else if (action === 'ajuste') ajusteStock(id);
       else if (action === 'devolucion') abrirDevolucionStock(id);
@@ -2305,8 +2309,9 @@ async function confirmarVentaProductos() {
 }
 
 function ajusteStock(id) {
+  console.log('[STOCK] ajusteStock llamado con id:', id);
   const p = db.stock.find(x => x.id === id);
-  if (!p) return;
+  if (!p) { console.warn('[STOCK] producto no encontrado:', id); return; }
   document.getElementById('ajuste-prod-id').value = id;
   document.getElementById('ajuste-prod-info').innerHTML =
     '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
@@ -2569,8 +2574,9 @@ async function confirmarDevolucion() {
 
 // ── DEVOLUCIÓN RÁPIDA DESDE STOCK ──────────────────────────────────────
 function abrirDevolucionStock(prodId) {
+  console.log('[STOCK] abrirDevolucionStock llamado con id:', prodId);
   const p = db.stock.find(x => x.id === prodId);
-  if (!p) return;
+  if (!p) { console.warn('[STOCK] producto no encontrado:', prodId); return; }
   document.getElementById('dev-stock-prod-id').value = prodId;
   document.getElementById('dev-stock-prod-info').innerHTML =
     `<strong>${esc(p.nombre)}</strong> — ${esc(p.talle||'')} ${esc(p.color||'')} | Stock actual: <strong>${p.cantidad}</strong>`;
