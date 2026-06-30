@@ -645,7 +645,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 <div class="toast-container" id="toasts"></div>
 
 <script>/*__INJECT_TOKEN__*/</script>
-<script>/*__INJECT_TOKEN__*/</script>
 <script>
 // ══════════════════════════════════════════════════════════════════════
 //  LOLITA BEBE — FLOW MANAGER
@@ -753,17 +752,17 @@ async function loadDB() {
 }
 
 async function saveDB() {
-  localStorage.setItem('cbk_db', JSON.stringify(db));
-  if (!API_TOKEN) return;
   try {
-    const resp = await fetch('/api/data', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'X-Api-Token': API_TOKEN },
-      body: JSON.stringify(db)
-    });
-    syncDisponible = resp.ok;
-  } catch(e) { syncDisponible = false; }
-  actualizarIndicadorSync();
+    const dbCache = {...db, stock: []};
+    localStorage.setItem('cbk_db', JSON.stringify(dbCache));
+  } catch(e) {}
+  if (!API_TOKEN) return;
+  fetch('/api/data', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'X-Api-Token': API_TOKEN },
+    body: JSON.stringify(db)
+  }).then(resp => { syncDisponible = resp.ok; actualizarIndicadorSync(); })
+    .catch(() => { syncDisponible = false; actualizarIndicadorSync(); });
 }
 
 function actualizarIndicadorSync() {
@@ -1988,7 +1987,7 @@ function renderStock() {
   if (stTotal) stTotal.textContent = total;
   if (stBajo) stBajo.textContent = bajo;
   if (stSin) stSin.textContent = sin;
-  if (stValor) stValor.textContent = '$' + formatMoney(valor);
+  if (stValor) stValor.textContent = '$' + fmtMoney(valor);
 
   const tbody = document.getElementById('tabla-stock');
   if (!tbody) return;
@@ -2014,10 +2013,11 @@ function renderStock() {
       <td><strong>${esc(p.nombre)}</strong>${p.notas?`<br><span style="font-size:11px;color:var(--text-soft)">${esc(p.notas)}</span>`:''}</td>
       <td>${esc(p.talle||'—')}</td>
       <td>${esc(p.color||'—')}</td>
-      <td style="font-weight:500">$${formatMoney(p.precio||0)}</td>
+      <td style="font-weight:500">${fmtMoney(p.precio||0)}</td>
       <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
       <td>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editarProducto('${p.id}')">✏</button>
+        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:#2e7d32" onclick="ajusteStock('${p.id}')">±</button>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--danger)" onclick="eliminarProducto('${p.id}')">🗑</button>
       </td>
     </tr>`;
@@ -2156,31 +2156,35 @@ function buscarProductoVenta() {
     cont.style.display = 'block';
     return;
   }
-  cont.innerHTML = resultados.map(p => `
-    <div class="prod-result-item" onclick="agregarAlCarrito('${p.id}')">
+  const lista = document.getElementById('venta-lista-precio')?.value || 'precioTarjeta';
+  cont.innerHTML = resultados.map(p => {
+    const precio = p[lista] || p.precio || 0;
+    return `<div class="prod-result-item" onclick="agregarAlCarrito('${p.id}')">
       <div>
         <strong>${esc(p.nombre)}</strong>
         <span style="color:var(--text-soft);margin-left:8px">${esc(p.talle||'')} ${esc(p.color||'')}</span>
         <br><code style="font-size:11px;color:var(--text-soft)">${esc(p.codigo)}</code>
       </div>
       <div style="text-align:right">
-        <div style="font-weight:500;color:var(--coffee)">$${formatMoney(p.precio||0)}</div>
+        <div style="font-weight:500;color:var(--coffee)">${fmtMoney(precio)}</div>
         <div style="font-size:11px;color:var(--text-soft)">Stock: ${p.cantidad}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   cont.style.display = 'block';
 }
 
 function agregarAlCarrito(prodId) {
   const p = db.stock.find(x => x.id === prodId);
   if (!p) return;
+  const lista = document.getElementById('venta-lista-precio')?.value || 'precioTarjeta';
+  const precioUsado = p[lista] || p.precio || 0;
   const existente = carritoVenta.find(x => x.producto.id === prodId);
   if (existente) {
     if (existente.cantidad >= p.cantidad) { toast(`Solo hay ${p.cantidad} en stock.`, 'error'); return; }
     existente.cantidad++;
   } else {
-    carritoVenta.push({ producto: p, cantidad: 1 });
+    carritoVenta.push({ producto: p, cantidad: 1, lista, precioUsado });
   }
   document.getElementById('venta-buscar-prod').value = '';
   document.getElementById('venta-resultados-prod').style.display = 'none';
@@ -2189,6 +2193,11 @@ function agregarAlCarrito(prodId) {
 
 function renderCarrito() {
   const cont = document.getElementById('venta-carrito');
+  const listaActual = document.getElementById('venta-lista-precio')?.value || 'precioTarjeta';
+  carritoVenta.forEach(item => {
+    item.lista = listaActual;
+    item.precioUsado = item.producto[listaActual] || item.producto.precio || 0;
+  });
   if (!carritoVenta.length) {
     cont.innerHTML = '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px">Buscá o escaneá un producto para agregarlo</div>';
     document.getElementById('venta-total').textContent = '$0,00';
@@ -2199,7 +2208,7 @@ function renderCarrito() {
       <div class="carrito-item-info">
         <strong>${esc(item.producto.nombre)}</strong>
         <span style="color:var(--text-soft);font-size:12px;margin-left:6px">${esc(item.producto.talle||'')} ${esc(item.producto.color||'')}</span>
-        <div style="font-size:12px;color:var(--coffee);font-weight:500">$${formatMoney(item.producto.precio||0)} c/u</div>
+        <div style="font-size:12px;color:var(--coffee);font-weight:500">${fmtMoney(item.precioUsado||0)} c/u</div>
       </div>
       <div class="carrito-item-qty">
         <button class="qty-btn" onclick="cambiarCantCarrito(${i},-1)">−</button>
@@ -2209,8 +2218,8 @@ function renderCarrito() {
       </div>
     </div>
   `).join('');
-  const total = carritoVenta.reduce((s, item) => s + (item.producto.precio || 0) * item.cantidad, 0);
-  document.getElementById('venta-total').textContent = '$' + formatMoney(total);
+  const total = carritoVenta.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
+  document.getElementById('venta-total').textContent = fmtMoney(total);
 }
 
 function cambiarCantCarrito(i, delta) {
@@ -2229,13 +2238,13 @@ function quitarDelCarrito(i) {
 
 async function confirmarVentaProductos() {
   if (!carritoVenta.length) { toast('Agregá al menos un producto.', 'error'); return; }
-  const total = carritoVenta.reduce((s, item) => s + (item.producto.precio || 0) * item.cantidad, 0);
+  const total = carritoVenta.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
   const detalle = carritoVenta.map(item => `${item.producto.nombre} x${item.cantidad}`).join(', ');
   
-  // Descontar del stock
+  // Descontar del stock — buscar por id Y por codigo como fallback
   carritoVenta.forEach(item => {
-    const p = db.stock.find(x => x.id === item.producto.id);
-    if (p) p.cantidad -= item.cantidad;
+    const p = db.stock.find(x => x.id === item.producto.id) || db.stock.find(x => x.codigo === item.producto.codigo);
+    if (p) p.cantidad = Math.max(0, p.cantidad - item.cantidad);
   });
 
   // Actualizar monto en el modal de ingreso
@@ -2245,11 +2254,51 @@ async function confirmarVentaProductos() {
     conceptoEl.value = 'Venta: ' + detalle;
   }
 
-  await saveDB();
-  logAudit('VENTA_PRODUCTOS', `${detalle} — $${total}`);
   closeModal('modal-venta-productos');
-  toast(`Stock actualizado. Total: $${formatMoney(total)} ✓`, 'success');
+  toast(`Stock actualizado. Total: ${fmtMoney(total)} ✓`, 'success');
   renderStock();
+  saveDB();
+  logAudit('VENTA_PRODUCTOS', `${detalle} — ${fmtMoney(total)}`);
+}
+
+function ajusteStock(id) {
+  const p = db.stock.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('ajuste-prod-id').value = id;
+  document.getElementById('ajuste-prod-info').innerHTML =
+    '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
+    '<br>Código: <code>' + esc(p.codigo) + '</code> | Stock actual: <strong>' + p.cantidad + '</strong>';
+  document.getElementById('ajuste-cantidad').value = 1;
+  document.getElementById('ajuste-motivo').value = '';
+  openModal('modal-ajuste-stock');
+}
+
+async function confirmarAjusteStock() {
+  const id = document.getElementById('ajuste-prod-id').value;
+  const tipo = document.getElementById('ajuste-tipo').value;
+  const cant = parseInt(document.getElementById('ajuste-cantidad').value) || 0;
+  const motivo = document.getElementById('ajuste-motivo').value.trim();
+  if (cant <= 0) { toast('Cantidad inválida.', 'error'); return; }
+  const p = db.stock.find(x => x.id === id);
+  if (!p) return;
+  const anterior = p.cantidad;
+  if (tipo === 'suma') p.cantidad += cant;
+  else if (tipo === 'resta') p.cantidad = Math.max(0, p.cantidad - cant);
+  else if (tipo === 'fijo') p.cantidad = cant;
+  closeModal('modal-ajuste-stock');
+  logAudit('STOCK_AJUSTE', `${p.nombre} (${p.codigo}): ${anterior} → ${p.cantidad}${motivo ? ' | ' + motivo : ''}`);
+  saveDB();
+  renderStock();
+  toast(`Stock ajustado: ${anterior} → ${p.cantidad} ✓`, 'success');
+}
+
+function autoSelectSiUnico() {
+  const q = (document.getElementById('venta-buscar-prod')?.value || '').trim();
+  if (!q) return;
+  const exacto = db.stock.find(p => p.cantidad > 0 && p.codigo === q);
+  if (exacto) { agregarAlCarrito(exacto.id); return; }
+  const res = db.stock.filter(p => p.cantidad > 0 && (p.codigo||'').toLowerCase().includes(q.toLowerCase()));
+  if (res.length === 1) agregarAlCarrito(res[0].id);
 }
 
 iniciarApp();
@@ -2316,7 +2365,17 @@ iniciarApp();
     <div class="modal-body">
       <div class="form-group">
         <label>Buscar o escanear código</label>
-        <input type="text" id="venta-buscar-prod" placeholder="Escanear código o escribir nombre..." autofocus oninput="buscarProductoVenta()" style="font-size:14px">
+      <div class="form-group">
+        <label>Lista de precios</label>
+        <select id="venta-lista-precio" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);margin-bottom:8px" onchange="renderCarrito()">
+          <option value="precioContado">Lista 4 — Precio Contado</option>
+          <option value="precioTarjeta" selected>Lista 5 — Precio Tarjeta</option>
+          <option value="precioSugerido">Lista 3 — Precio Sugerido</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Buscar o escanear código de barras</label>
+        <input type="text" id="venta-buscar-prod" placeholder="Escanear código o escribir nombre..." autofocus oninput="buscarProductoVenta()" onkeydown="if(event.key==='Enter'){event.preventDefault();autoSelectSiUnico();}" style="font-size:14px;font-family:monospace" autocomplete="off">
       </div>
       <div id="venta-resultados-prod" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:12px;display:none"></div>
       <div style="font-size:13px;font-weight:500;color:var(--text-mid);margin-bottom:8px">Productos en esta venta:</div>
@@ -2328,6 +2387,31 @@ iniciarApp();
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('modal-venta-productos')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarVentaProductos()">Confirmar y descontar stock</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJUSTE DE STOCK -->
+<div class="modal-overlay" id="modal-ajuste-stock">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><h3>± Ajuste de Stock</h3><button class="modal-close" onclick="closeModal('modal-ajuste-stock')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="ajuste-prod-id">
+      <div id="ajuste-prod-info" style="background:var(--cream-dark);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px"></div>
+      <div class="form-group">
+        <label>Tipo de ajuste</label>
+        <select id="ajuste-tipo" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:8px;background:var(--cream)">
+          <option value="suma">+ Sumar stock (devolución, reposición)</option>
+          <option value="resta">− Restar stock (pérdida, corrección)</option>
+          <option value="fijo">= Establecer cantidad exacta</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Cantidad</label><input type="number" id="ajuste-cantidad" min="1" value="1"></div>
+      <div class="form-group"><label>Motivo (opcional)</label><input type="text" id="ajuste-motivo" placeholder="Ej: Devolución cliente, corrección inventario..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-ajuste-stock')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarAjusteStock()">Confirmar ajuste</button>
     </div>
   </div>
 </div>
