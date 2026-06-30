@@ -1988,7 +1988,7 @@ function renderStock() {
   if (stTotal) stTotal.textContent = total;
   if (stBajo) stBajo.textContent = bajo;
   if (stSin) stSin.textContent = sin;
-  if (stValor) stValor.textContent = '$' + fmtMoney(valor);
+  if (stValor) stValor.textContent = '$' + formatMoney(valor);
 
   const tbody = document.getElementById('tabla-stock');
   if (!tbody) return;
@@ -2014,11 +2014,10 @@ function renderStock() {
       <td><strong>${esc(p.nombre)}</strong>${p.notas?`<br><span style="font-size:11px;color:var(--text-soft)">${esc(p.notas)}</span>`:''}</td>
       <td>${esc(p.talle||'—')}</td>
       <td>${esc(p.color||'—')}</td>
-      <td style="font-weight:500">$${fmtMoney(p.precio||0)}</td>
+      <td style="font-weight:500">$${formatMoney(p.precio||0)}</td>
       <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
       <td>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editarProducto('${p.id}')">✏</button>
-        <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:#2e7d32" onclick="ajusteStock('${p.id}')">±</button>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--danger)" onclick="eliminarProducto('${p.id}')">🗑</button>
       </td>
     </tr>`;
@@ -2165,7 +2164,7 @@ function buscarProductoVenta() {
         <br><code style="font-size:11px;color:var(--text-soft)">${esc(p.codigo)}</code>
       </div>
       <div style="text-align:right">
-        <div style="font-weight:500;color:var(--coffee)">$${fmtMoney(p.precio||0)}</div>
+        <div style="font-weight:500;color:var(--coffee)">$${formatMoney(p.precio||0)}</div>
         <div style="font-size:11px;color:var(--text-soft)">Stock: ${p.cantidad}</div>
       </div>
     </div>
@@ -2200,7 +2199,7 @@ function renderCarrito() {
       <div class="carrito-item-info">
         <strong>${esc(item.producto.nombre)}</strong>
         <span style="color:var(--text-soft);font-size:12px;margin-left:6px">${esc(item.producto.talle||'')} ${esc(item.producto.color||'')}</span>
-        <div style="font-size:12px;color:var(--coffee);font-weight:500">$${fmtMoney(item.producto.precio||0)} c/u</div>
+        <div style="font-size:12px;color:var(--coffee);font-weight:500">$${formatMoney(item.producto.precio||0)} c/u</div>
       </div>
       <div class="carrito-item-qty">
         <button class="qty-btn" onclick="cambiarCantCarrito(${i},-1)">−</button>
@@ -2211,7 +2210,7 @@ function renderCarrito() {
     </div>
   `).join('');
   const total = carritoVenta.reduce((s, item) => s + (item.producto.precio || 0) * item.cantidad, 0);
-  document.getElementById('venta-total').textContent = '$' + fmtMoney(total);
+  document.getElementById('venta-total').textContent = '$' + formatMoney(total);
 }
 
 function cambiarCantCarrito(i, delta) {
@@ -2249,38 +2248,10 @@ async function confirmarVentaProductos() {
   await saveDB();
   logAudit('VENTA_PRODUCTOS', `${detalle} — $${total}`);
   closeModal('modal-venta-productos');
-  toast(`Stock actualizado. Total: $${fmtMoney(total)} ✓`, 'success');
+  toast(`Stock actualizado. Total: $${formatMoney(total)} ✓`, 'success');
   renderStock();
 }
 
-
-function ajusteStock(id) {
-  var p = db.stock.find(function(x){return x.id===id;});
-  if (!p) return;
-  document.getElementById("ajuste-prod-id").value = id;
-  document.getElementById("ajuste-prod-info").innerHTML = "<strong>"+p.nombre+"</strong> - "+(p.talle||"")+" "+(p.color||"")+"<br>Codigo: "+p.codigo+" | Stock actual: <strong>"+p.cantidad+"</strong>";
-  document.getElementById("ajuste-cantidad").value = 1;
-  document.getElementById("ajuste-motivo").value = "";
-  openModal("modal-ajuste-stock");
-}
-async function confirmarAjusteStock() {
-  var id = document.getElementById("ajuste-prod-id").value;
-  var tipo = document.getElementById("ajuste-tipo").value;
-  var cant = parseInt(document.getElementById("ajuste-cantidad").value)||0;
-  var motivo = document.getElementById("ajuste-motivo").value.trim();
-  if (cant<=0) { toast("Cantidad invalida.","error"); return; }
-  var p = db.stock.find(function(x){return x.id===id;});
-  if (!p) return;
-  var anterior = p.cantidad;
-  if (tipo==="suma") p.cantidad += cant;
-  else if (tipo==="resta") p.cantidad = Math.max(0, p.cantidad-cant);
-  else if (tipo==="fijo") p.cantidad = cant;
-  closeModal("modal-ajuste-stock");
-  logAudit("STOCK_AJUSTE", p.nombre+" ("+p.codigo+"): "+anterior+" -> "+p.cantidad+(motivo?" | "+motivo:""));
-  saveDB();
-  renderStock();
-  toast("Stock ajustado: "+anterior+" -> "+p.cantidad+" ok","success");
-}
 iniciarApp();
 </script>
 
@@ -2361,8 +2332,5 @@ iniciarApp();
   </div>
 </div>
 
-
-<!-- MODAL AJUSTE -->
-<div class="modal-overlay" id="modal-ajuste-stock"><div class="modal" style="max-width:400px"><div class="modal-header"><h3>Ajuste de Stock</h3><button class="modal-close" onclick="closeModal('modal-ajuste-stock')">x</button></div><div class="modal-body"><input type="hidden" id="ajuste-prod-id"><div id="ajuste-prod-info" style="background:#f5f5f5;border-radius:8px;padding:10px;margin-bottom:14px;font-size:13px"></div><div class="form-group"><label>Tipo de ajuste</label><select id="ajuste-tipo" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px"><option value="suma">+ Sumar stock (devolucion, reposicion)</option><option value="resta">- Restar stock (perdida, correccion)</option><option value="fijo">= Establecer cantidad exacta</option></select></div><div class="form-group"><label>Cantidad</label><input type="number" id="ajuste-cantidad" min="1" value="1" style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px"></div><div class="form-group"><label>Motivo (opcional)</label><input type="text" id="ajuste-motivo" placeholder="Ej: Devolucion cliente..." style="width:100%;padding:8px;border:1px solid #ccc;border-radius:8px"></div></div><div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-ajuste-stock')">Cancelar</button><button class="btn btn-primary" onclick="confirmarAjusteStock()">Confirmar</button></div></div></div>
 </body>
 </html>
