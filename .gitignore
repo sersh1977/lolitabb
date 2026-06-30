@@ -1,6 +1,7 @@
 # Secretos — NUNCA subir a GitHub
 .env
 api-token.txt
+importar-stock.ps1
 
 # Datos de producción — se mantienen en el servidor Railway, no en Git
 data.json
@@ -15,6 +16,23 @@ backups/
 cloudflared.exe
 config.yml
 INSTRUCCIONES.txt
+
+# Datos de stock importados (no se usan en producción)
+stock_lince.json
+stockLince/
+
+# Scripts de desarrollo/one-shot (ya aplicados)
+add-ajuste.js
+fix-dollar.js
+scripts/generate-icons.js
+scripts/hash-password.js
+
+# Archivos comprimidos desconocidos
+files.zip
+files2.zip
+
+# Carpetas vacías / sin uso
+a15000/
 
 # Node
 node_modules/
