@@ -881,17 +881,42 @@ function renderPage(page) {
 //  MODALES
 // ══════════════════════════════════════
 function openModal(id) {
-  document.getElementById(id).classList.add('open');
+  const el = document.getElementById(id);
+  if (!el) { console.error('Error: modal no encontrado', id); return; }
+  el.classList.add('open');
+  console.log('Modal ' + id + ' abierto. Display:', getComputedStyle(el).display);
+  
+  setTimeout(() => {
+    if (!el.classList.contains('open')) {
+      console.error('¡Alerta! El modal ' + id + ' se cerró solo inmediatamente');
+    }
+  }, 100);
+
   if (id==='modal-ingreso') {
     poblarConceptosIngreso();
     const c = document.getElementById('ing-concepto');
-    if (!c.value) c.value = 'Ventas';
+    if (c && !c.value) c.value = 'Ventas';
   } else if (id==='modal-gasto') {
     poblarConceptosGasto();
   } else if (id==='modal-tema') {
     renderTemaGrid(localStorage.getItem('cbk_tema')||'turquesa');
   }
 }
+
+function ajusteStock(id) {
+  const p = db.stock.find(x => x.id === id);
+  if (!p) return;
+  console.log('Abriendo modal de ajuste para:', id);
+  openModal('modal-ajuste-stock');
+}
+
+function abrirDevolucionStock(prodId) {
+  const p = db.stock.find(x => x.id === prodId);
+  if (!p) return;
+  console.log('Abriendo modal de devolución para:', prodId);
+  openModal('modal-devolver-stock');
+}
+
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
@@ -2059,16 +2084,17 @@ function renderStock() {
   }
   // Bind directo a cada botón después de renderizar
   document.querySelectorAll('#tabla-stock .stock-btn').forEach(btn => {
-    const action = btn.getAttribute('data-action');
-    const id = btn.getAttribute('data-id');
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
     if (!action || !id) return;
-    btn.onclick = function(e) {
+    btn.onclick = function() {
       if (action === 'editar') editarProducto(id);
       else if (action === 'ajuste') ajusteStock(id);
       else if (action === 'devolucion') abrirDevolucionStock(id);
       else if (action === 'eliminar') eliminarProducto(id);
     };
   });
+}
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -2302,18 +2328,6 @@ async function confirmarVentaProductos() {
   renderStock();
   saveDB();
   logAudit('VENTA_PRODUCTOS', `${detalle} — ${fmtMoney(total)}`);
-}
-
-function ajusteStock(id) {
-  const p = db.stock.find(x => x.id === id);
-  if (!p) return;
-  document.getElementById('ajuste-prod-id').value = id;
-  document.getElementById('ajuste-prod-info').innerHTML =
-    '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
-    '<br>Código: <code>' + esc(p.codigo) + '</code> | Stock actual: <strong>' + p.cantidad + '</strong>';
-  document.getElementById('ajuste-cantidad').value = 1;
-  document.getElementById('ajuste-motivo').value = '';
-  openModal('modal-ajuste-stock');
 }
 
 async function confirmarAjusteStock() {
@@ -2568,17 +2582,6 @@ async function confirmarDevolucion() {
 }
 
 // ── DEVOLUCIÓN RÁPIDA DESDE STOCK ──────────────────────────────────────
-function abrirDevolucionStock(prodId) {
-  const p = db.stock.find(x => x.id === prodId);
-  if (!p) return;
-  document.getElementById('dev-stock-prod-id').value = prodId;
-  document.getElementById('dev-stock-prod-info').innerHTML =
-    `<strong>${esc(p.nombre)}</strong> — ${esc(p.talle||'')} ${esc(p.color||'')} | Stock actual: <strong>${p.cantidad}</strong>`;
-  document.getElementById('dev-stock-cantidad').value = 1;
-  document.getElementById('dev-stock-motivo').value = '';
-  openModal('modal-devolver-stock');
-}
-
 async function confirmarDevolucionStock() {
   const prodId = document.getElementById('dev-stock-prod-id').value;
   const cant = parseInt(document.getElementById('dev-stock-cantidad').value) || 0;
