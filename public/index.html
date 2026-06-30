@@ -1988,7 +1988,7 @@ function renderStock() {
   if (stTotal) stTotal.textContent = total;
   if (stBajo) stBajo.textContent = bajo;
   if (stSin) stSin.textContent = sin;
-  if (stValor) stValor.textContent = '$' + fmtMoney(valor);
+  if (stValor) stValor.textContent = '$' + formatMoney(valor);
 
   const tbody = document.getElementById('tabla-stock');
   if (!tbody) return;
@@ -2014,7 +2014,7 @@ function renderStock() {
       <td><strong>${esc(p.nombre)}</strong>${p.notas?`<br><span style="font-size:11px;color:var(--text-soft)">${esc(p.notas)}</span>`:''}</td>
       <td>${esc(p.talle||'—')}</td>
       <td>${esc(p.color||'—')}</td>
-      <td style="font-weight:500">$${fmtMoney(p.precio||0)}</td>
+      <td style="font-weight:500">$${formatMoney(p.precio||0)}</td>
       <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
       <td>
         <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editarProducto('${p.id}')">✏</button>
@@ -2164,7 +2164,7 @@ function buscarProductoVenta() {
         <br><code style="font-size:11px;color:var(--text-soft)">${esc(p.codigo)}</code>
       </div>
       <div style="text-align:right">
-        <div style="font-weight:500;color:var(--coffee)">$${fmtMoney(p.precio||0)}</div>
+        <div style="font-weight:500;color:var(--coffee)">$${formatMoney(p.precio||0)}</div>
         <div style="font-size:11px;color:var(--text-soft)">Stock: ${p.cantidad}</div>
       </div>
     </div>
@@ -2199,7 +2199,7 @@ function renderCarrito() {
       <div class="carrito-item-info">
         <strong>${esc(item.producto.nombre)}</strong>
         <span style="color:var(--text-soft);font-size:12px;margin-left:6px">${esc(item.producto.talle||'')} ${esc(item.producto.color||'')}</span>
-        <div style="font-size:12px;color:var(--coffee);font-weight:500">$${fmtMoney(item.producto.precio||0)} c/u</div>
+        <div style="font-size:12px;color:var(--coffee);font-weight:500">$${formatMoney(item.producto.precio||0)} c/u</div>
       </div>
       <div class="carrito-item-qty">
         <button class="qty-btn" onclick="cambiarCantCarrito(${i},-1)">−</button>
@@ -2210,7 +2210,7 @@ function renderCarrito() {
     </div>
   `).join('');
   const total = carritoVenta.reduce((s, item) => s + (item.producto.precio || 0) * item.cantidad, 0);
-  document.getElementById('venta-total').textContent = '$' + fmtMoney(total);
+  document.getElementById('venta-total').textContent = '$' + formatMoney(total);
 }
 
 function cambiarCantCarrito(i, delta) {
@@ -2248,7 +2248,7 @@ async function confirmarVentaProductos() {
   await saveDB();
   logAudit('VENTA_PRODUCTOS', `${detalle} — $${total}`);
   closeModal('modal-venta-productos');
-  toast(`Stock actualizado. Total: $${fmtMoney(total)} ✓`, 'success');
+  toast(`Stock actualizado. Total: $${formatMoney(total)} ✓`, 'success');
   renderStock();
 }
 
