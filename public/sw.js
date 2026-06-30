@@ -1,4 +1,4 @@
-const CACHE = 'cbk-v4';
+const CACHE = 'cbk-v5';
 const ASSETS = [
   '/',
   '/index.html',
