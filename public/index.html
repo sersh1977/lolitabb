@@ -846,11 +846,12 @@ function initApp() {
     if (!btn) return;
     const action = btn.getAttribute('data-action');
     const id = btn.getAttribute('data-id');
-    if (!action || !id) return;
+    if (!action || !id) { toast('DEBUG: btn sin data-action/id','error'); return; }
     if (action === 'editar') editarProducto(id);
     else if (action === 'ajuste') ajusteStock(id);
     else if (action === 'devolucion') abrirDevolucionStock(id);
     else if (action === 'eliminar') eliminarProducto(id);
+    else toast('DEBUG: acción desconocida: '+action,'error');
   });
   goTo('dashboard');
 }
