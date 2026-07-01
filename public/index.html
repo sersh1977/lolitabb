@@ -2067,7 +2067,7 @@ function renderStock() {
       <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
       <td>
         <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px" data-action="editar" data-id="${p.id}">✏</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="ajusteStock(this.dataset.id)">±</button>
+        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="openModal('modal-ajuste-stock')">±</button>
         <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#b8860b" data-action="devolucion" data-id="${p.id}" title="Devolución rápida" onclick="abrirDevolucionStock(this.dataset.id)">↩</button>
         <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:var(--danger)" data-action="eliminar" data-id="${p.id}">🗑</button>
       </td>
