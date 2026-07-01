@@ -888,8 +888,10 @@ function openModal(id) {
 }
 
 function ajusteStock(id) {
-  const p = db.stock.find(x => x.id == id);
-  if (!p) return;
+  console.log('ajusteStock llamado con id:', id, 'tipo:', typeof id);
+  console.log('db.stock:', db.stock);
+  const p = db.stock.find(x => { console.log('comparando:', x.id, '==', id, 'resultado:', x.id == id); return x.id == id; });
+  if (!p) { console.error('Producto no encontrado con id:', id); return; }
   document.getElementById('ajuste-prod-id').value = id;
   document.getElementById('ajuste-prod-info').innerHTML =
     '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
@@ -2058,10 +2060,7 @@ function renderStock() {
       <td style="font-weight:500">${fmtMoney(p.precio||0)}</td>
       <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
       <td>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px" data-action="editar" data-id="${p.id}" onclick="editarProducto(this.dataset.id)">✏</button>
         <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="ajusteStock(this.dataset.id)">±</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#b8860b" data-action="devolucion" data-id="${p.id}" title="Devolución rápida" onclick="abrirDevolucionStock(this.dataset.id)">↩</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:var(--danger)" data-action="eliminar" data-id="${p.id}" onclick="eliminarProducto(this.dataset.id)">🗑</button>
       </td>
     </tr>`;
   }).join('');
