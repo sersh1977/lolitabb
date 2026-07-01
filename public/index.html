@@ -477,7 +477,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <button class="filter-btn" onclick="setFilterStock('bajo-stock',this)">Stock bajo</button>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="text" id="stock-buscar" placeholder="🔍 Buscar o escanear código..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderStock()">
+      <input type="text" id="stock-buscar" placeholder="🔍 Buscar o escanear código..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderStock()" onkeydown="if(event.key==='Enter'){event.preventDefault();renderStock()}">
       <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Nuevo producto</button>
     </div>
   </div>
@@ -2078,6 +2078,7 @@ function renderStock() {
         </div>
       </div>`;
   }
+  setTimeout(() => document.getElementById('stock-buscar')?.focus(), 100);
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -2101,7 +2102,13 @@ async function guardarProducto() {
   if (!codigo) { toast('El código es obligatorio.', 'error'); return; }
   if (db.stock.some(p => p.codigo === codigo)) { toast('Ya existe un producto con ese código.', 'error'); return; }
 
-  const prod = { id: 'p' + Date.now(), codigo, nombre, talle, color, precio, cantidad, notas, creadoEn: new Date().toISOString() };
+  const prod = {
+    id: 'p' + Date.now(), codigo, nombre, talle, color, precio, cantidad, notas,
+    precioSugerido: parseFloat(document.getElementById('prod-precio-sugerido').value) || 0,
+    precioContado: parseFloat(document.getElementById('prod-precio-contado').value) || 0,
+    precioTarjeta: parseFloat(document.getElementById('prod-precio-tarjeta').value) || 0,
+    creadoEn: new Date().toISOString()
+  };
   db.stock.push(prod);
   await saveDB();
   logAudit('STOCK_NUEVO', `${nombre} (${codigo}) — ${cantidad} unidades — $${precio}`);
@@ -2126,6 +2133,9 @@ function editarProducto(id) {
   document.getElementById('edit-prod-talle').value = p.talle || '';
   document.getElementById('edit-prod-color').value = p.color || '';
   document.getElementById('edit-prod-precio').value = p.precio || '';
+  document.getElementById('edit-prod-precio-sugerido').value = p.precioSugerido || '';
+  document.getElementById('edit-prod-precio-contado').value = p.precioContado || '';
+  document.getElementById('edit-prod-precio-tarjeta').value = p.precioTarjeta || '';
   document.getElementById('edit-prod-cantidad').value = p.cantidad || 0;
   document.getElementById('edit-prod-notas').value = p.notas || '';
   openModal('modal-edit-producto');
@@ -2148,6 +2158,9 @@ async function guardarEditProducto() {
     talle: document.getElementById('edit-prod-talle').value.trim(),
     color: document.getElementById('edit-prod-color').value.trim(),
     precio: parseFloat(document.getElementById('edit-prod-precio').value) || 0,
+    precioSugerido: parseFloat(document.getElementById('edit-prod-precio-sugerido').value) || 0,
+    precioContado: parseFloat(document.getElementById('edit-prod-precio-contado').value) || 0,
+    precioTarjeta: parseFloat(document.getElementById('edit-prod-precio-tarjeta').value) || 0,
     cantidad: parseInt(document.getElementById('edit-prod-cantidad').value) || 0,
     notas: document.getElementById('edit-prod-notas').value.trim(),
   };
@@ -2601,7 +2614,15 @@ iniciarApp();
       </div>
       <div class="form-row">
         <div class="form-group"><label>Código / Barcode</label><input type="text" id="prod-codigo" placeholder="Ej: COD-001 o escanear" autofocus></div>
-        <div class="form-group"><label>Precio ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Precio base ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01"></div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:8px;display:block">Precios por lista</label>
+        <div class="form-row">
+          <div class="form-group"><label>Lista 3 — Sugerido ($)</label><input type="number" id="prod-precio-sugerido" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group"><label>Lista 4 — Contado ($)</label><input type="number" id="prod-precio-contado" placeholder="0.00" min="0" step="0.01"></div>
+        </div>
+        <div class="form-group"><label>Lista 5 — Tarjeta ($)</label><input type="number" id="prod-precio-tarjeta" placeholder="0.00" min="0" step="0.01"></div>
       </div>
       <div class="form-group"><label>Nombre del producto</label><input type="text" id="prod-nombre" placeholder="Ej: Remera Flower"></div>
       <div class="form-row">
@@ -2626,7 +2647,15 @@ iniciarApp();
       <input type="hidden" id="edit-prod-id">
       <div class="form-row">
         <div class="form-group"><label>Código / Barcode</label><input type="text" id="edit-prod-codigo" placeholder="Ej: COD-001"></div>
-        <div class="form-group"><label>Precio ($)</label><input type="number" id="edit-prod-precio" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Precio base ($)</label><input type="number" id="edit-prod-precio" placeholder="0.00" min="0" step="0.01"></div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:8px;display:block">Precios por lista</label>
+        <div class="form-row">
+          <div class="form-group"><label>Lista 3 — Sugerido ($)</label><input type="number" id="edit-prod-precio-sugerido" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group"><label>Lista 4 — Contado ($)</label><input type="number" id="edit-prod-precio-contado" placeholder="0.00" min="0" step="0.01"></div>
+        </div>
+        <div class="form-group"><label>Lista 5 — Tarjeta ($)</label><input type="number" id="edit-prod-precio-tarjeta" placeholder="0.00" min="0" step="0.01"></div>
       </div>
       <div class="form-group"><label>Nombre del producto</label><input type="text" id="edit-prod-nombre"></div>
       <div class="form-row">
