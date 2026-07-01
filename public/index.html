@@ -906,14 +906,24 @@ function openModal(id) {
 function ajusteStock(id) {
   const p = db.stock.find(x => x.id === id);
   if (!p) return;
-  console.log('Abriendo modal de ajuste para:', id);
+  document.getElementById('ajuste-prod-id').value = id;
+  document.getElementById('ajuste-prod-info').innerHTML =
+    '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
+    '<br>Código: <code>' + esc(p.codigo) + '</code> | Stock actual: <strong>' + p.cantidad + '</strong>';
+  document.getElementById('ajuste-cantidad').value = 1;
+  document.getElementById('ajuste-motivo').value = '';
   openModal('modal-ajuste-stock');
 }
 
 function abrirDevolucionStock(prodId) {
   const p = db.stock.find(x => x.id === prodId);
   if (!p) return;
-  console.log('Abriendo modal de devolución para:', prodId);
+  document.getElementById('dev-stock-prod-id').value = prodId;
+  document.getElementById('dev-stock-prod-info').innerHTML =
+    '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
+    ' | Stock actual: <strong>' + p.cantidad + '</strong>';
+  document.getElementById('dev-stock-cantidad').value = 1;
+  document.getElementById('dev-stock-motivo').value = '';
   openModal('modal-devolver-stock');
 }
 
