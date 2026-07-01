@@ -883,14 +883,12 @@ function renderPage(page) {
 function openModal(id) {
   const el = document.getElementById(id);
   if (!el) { console.error('Error: modal no encontrado', id); return; }
-  el.style.display = 'block';
+  el.style.display = 'flex';
   console.log('Modal ' + id + ' abierto.');
 }
 
 function ajusteStock(id) {
-  console.log('ajusteStock llamado con id:', id, 'tipo:', typeof id);
-  console.log('db.stock:', db.stock);
-  const p = db.stock.find(x => { console.log('comparando:', x.id, '==', id, 'resultado:', x.id == id); return x.id == id; });
+  const p = db.stock.find(x => x.id == id);
   if (!p) { console.error('Producto no encontrado con id:', id); return; }
   document.getElementById('ajuste-prod-id').value = id;
   document.getElementById('ajuste-prod-info').innerHTML =
