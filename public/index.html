@@ -931,6 +931,18 @@ function closeModal(id) { document.getElementById(id).classList.remove('open'); 
 document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
 });
+document.addEventListener('click', function(e) {
+  const btn = e.target.closest('.stock-btn');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  if (!action || !id) return;
+  e.preventDefault();
+  if (action === 'editar') editarProducto(id);
+  else if (action === 'ajuste') ajusteStock(id);
+  else if (action === 'devolucion') abrirDevolucionStock(id);
+  else if (action === 'eliminar') eliminarProducto(id);
+});
 
 function poblarConceptosIngreso() {
   const usados = [...new Set(db.ingresos.map(x=>x.concepto).filter(Boolean))];
@@ -2092,20 +2104,6 @@ function renderStock() {
         </div>
       </div>`;
   }
-  // Bind directo a cada botón después de renderizar
-  document.querySelectorAll('#tabla-stock .stock-btn').forEach(btn => {
-    const action = btn.dataset.action;
-    const id = btn.dataset.id;
-    if (!action || !id) return;
-    btn.onclick = function() {
-      try {
-        if (action === 'editar') editarProducto(id);
-        else if (action === 'ajuste') ajusteStock(id);
-        else if (action === 'devolucion') abrirDevolucionStock(id);
-        else if (action === 'eliminar') eliminarProducto(id);
-      } catch(e) { alert('Error: ' + e.message + '\nURL: ' + window.location.href); }
-    };
-  });
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
