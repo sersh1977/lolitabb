@@ -2032,7 +2032,7 @@ function renderStock() {
   if (stTotal) stTotal.textContent = total;
   if (stBajo) stBajo.textContent = bajo;
   if (stSin) stSin.textContent = sin;
-  if (stValor) stValor.textContent = '$' + fmtMoney(valor);
+  if (stValor) stValor.textContent = fmtMoney(valor);
 
   const tbody = document.getElementById('tabla-stock');
   if (!tbody) return;
