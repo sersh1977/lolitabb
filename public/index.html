@@ -2184,12 +2184,7 @@ function buscarProductoVenta() {
   if (!q) { cont.style.display = 'none'; return; }
   
   const resultados = (db.stock || []).filter(p =>
-    p.cantidad > 0 && (
-      (p.codigo||'').toLowerCase().includes(q) ||
-      (p.nombre||'').toLowerCase().includes(q) ||
-      (p.talle||'').toLowerCase().includes(q) ||
-      (p.color||'').toLowerCase().includes(q)
-    )
+    p.cantidad > 0 && (p.codigo||'').toLowerCase().startsWith(q)
   ).slice(0, 8);
 
   if (!resultados.length) {
@@ -2337,7 +2332,7 @@ function autoSelectSiUnico() {
   if (!q) return;
   const exacto = db.stock.find(p => p.cantidad > 0 && p.codigo === q);
   if (exacto) { agregarAlCarrito(exacto.id); return; }
-  const res = db.stock.filter(p => p.cantidad > 0 && (p.codigo||'').toLowerCase().includes(q.toLowerCase()));
+  const res = db.stock.filter(p => p.cantidad > 0 && (p.codigo||'').toLowerCase().startsWith(q.toLowerCase()));
   if (res.length === 1) agregarAlCarrito(res[0].id);
 }
 
