@@ -2619,10 +2619,10 @@ iniciarApp();
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);margin-bottom:12px">
         <label style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:8px;display:block">Precios por lista</label>
         <div class="form-row">
-          <div class="form-group"><label>Lista 3 — Sugerido ($)</label><input type="number" id="prod-precio-sugerido" placeholder="0.00" min="0" step="0.01"></div>
-          <div class="form-group"><label>Lista 4 — Contado ($)</label><input type="number" id="prod-precio-contado" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group"><label>Lista 3 ($)</label><input type="number" id="prod-precio-sugerido" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group"><label>Lista 4 ($)</label><input type="number" id="prod-precio-contado" placeholder="0.00" min="0" step="0.01"></div>
         </div>
-        <div class="form-group"><label>Lista 5 — Tarjeta ($)</label><input type="number" id="prod-precio-tarjeta" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Lista 5 ($)</label><input type="number" id="prod-precio-tarjeta" placeholder="0.00" min="0" step="0.01"></div>
       </div>
       <div class="form-group"><label>Nombre del producto</label><input type="text" id="prod-nombre" placeholder="Ej: Remera Flower"></div>
       <div class="form-row">
@@ -2652,10 +2652,10 @@ iniciarApp();
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);margin-bottom:12px">
         <label style="font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:8px;display:block">Precios por lista</label>
         <div class="form-row">
-          <div class="form-group"><label>Lista 3 — Sugerido ($)</label><input type="number" id="edit-prod-precio-sugerido" placeholder="0.00" min="0" step="0.01"></div>
-          <div class="form-group"><label>Lista 4 — Contado ($)</label><input type="number" id="edit-prod-precio-contado" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group"><label>Lista 3 ($)</label><input type="number" id="edit-prod-precio-sugerido" placeholder="0.00" min="0" step="0.01"></div>
+          <div class="form-group"><label>Lista 4 ($)</label><input type="number" id="edit-prod-precio-contado" placeholder="0.00" min="0" step="0.01"></div>
         </div>
-        <div class="form-group"><label>Lista 5 — Tarjeta ($)</label><input type="number" id="edit-prod-precio-tarjeta" placeholder="0.00" min="0" step="0.01"></div>
+        <div class="form-group"><label>Lista 5 ($)</label><input type="number" id="edit-prod-precio-tarjeta" placeholder="0.00" min="0" step="0.01"></div>
       </div>
       <div class="form-group"><label>Nombre del producto</label><input type="text" id="edit-prod-nombre"></div>
       <div class="form-row">
@@ -2682,9 +2682,9 @@ iniciarApp();
       <div class="form-group">
         <label>Lista de precios</label>
         <select id="venta-lista-precio" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);margin-bottom:8px" onchange="buscarProductoVenta();renderCarrito()">
-          <option value="precioContado">Lista 4 — Precio Contado</option>
-          <option value="precioTarjeta" selected>Lista 5 — Precio Tarjeta</option>
-          <option value="precioSugerido">Lista 3 — Precio Sugerido</option>
+          <option value="precioSugerido">Lista 3</option>
+          <option value="precioContado">Lista 4</option>
+          <option value="precioTarjeta" selected>Lista 5</option>
         </select>
       </div>
       <div class="form-group">
