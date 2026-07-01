@@ -897,6 +897,7 @@ function ajusteStock(id) {
   document.getElementById('ajuste-cantidad').value = 1;
   document.getElementById('ajuste-motivo').value = '';
   openModal('modal-ajuste-stock');
+  window.alert('Modal ' + p.nombre + ' abierto. Stock: ' + p.cantidad);
 }
 
 function abrirDevolucionStock(prodId) {
