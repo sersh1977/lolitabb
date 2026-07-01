@@ -904,7 +904,7 @@ function openModal(id) {
 }
 
 function ajusteStock(id) {
-  const p = db.stock.find(x => x.id === id);
+  const p = db.stock.find(x => x.id == id);
   if (!p) return;
   document.getElementById('ajuste-prod-id').value = id;
   document.getElementById('ajuste-prod-info').innerHTML =
@@ -916,7 +916,7 @@ function ajusteStock(id) {
 }
 
 function abrirDevolucionStock(prodId) {
-  const p = db.stock.find(x => x.id === prodId);
+  const p = db.stock.find(x => x.id == prodId);
   if (!p) return;
   document.getElementById('dev-stock-prod-id').value = prodId;
   document.getElementById('dev-stock-prod-info').innerHTML =
@@ -2098,10 +2098,12 @@ function renderStock() {
     const id = btn.dataset.id;
     if (!action || !id) return;
     btn.onclick = function() {
-      if (action === 'editar') editarProducto(id);
-      else if (action === 'ajuste') ajusteStock(id);
-      else if (action === 'devolucion') abrirDevolucionStock(id);
-      else if (action === 'eliminar') eliminarProducto(id);
+      try {
+        if (action === 'editar') editarProducto(id);
+        else if (action === 'ajuste') ajusteStock(id);
+        else if (action === 'devolucion') abrirDevolucionStock(id);
+        else if (action === 'eliminar') eliminarProducto(id);
+      } catch(e) { alert('Error: ' + e.message + '\nURL: ' + window.location.href); }
     };
   });
 }
@@ -2144,7 +2146,7 @@ async function guardarProducto() {
 }
 
 function editarProducto(id) {
-  const p = db.stock.find(x => x.id === id);
+  const p = db.stock.find(x => x.id == id);
   if (!p) return;
   document.getElementById('edit-prod-id').value = p.id;
   document.getElementById('edit-prod-codigo').value = p.codigo || '';
@@ -2185,7 +2187,7 @@ async function guardarEditProducto() {
 }
 
 async function eliminarProducto(id) {
-  const p = db.stock.find(x => x.id === id);
+  const p = db.stock.find(x => x.id == id);
   if (!p) return;
   if (!confirm(`¿Eliminar "${p.nombre}" (${p.codigo}) del stock?`)) return;
   db.stock = db.stock.filter(x => x.id !== id);
@@ -2242,7 +2244,7 @@ function buscarProductoVenta() {
 }
 
 function agregarAlCarrito(prodId) {
-  const p = db.stock.find(x => x.id === prodId);
+  const p = db.stock.find(x => x.id == prodId);
   if (!p) return;
   const lista = document.getElementById('venta-lista-precio')?.value || 'precioTarjeta';
   const precioUsado = p[lista] || p.precio || 0;
@@ -2310,7 +2312,7 @@ async function confirmarVentaProductos() {
   
   // Descontar del stock — buscar por id Y por codigo como fallback
   carritoVenta.forEach(item => {
-    const p = db.stock.find(x => x.id === item.producto.id) || db.stock.find(x => x.codigo === item.producto.codigo);
+    const p = db.stock.find(x => x.id == item.producto.id) || db.stock.find(x => x.codigo === item.producto.codigo);
     if (p) p.cantidad = Math.max(0, p.cantidad - item.cantidad);
   });
 
@@ -2345,7 +2347,7 @@ async function confirmarAjusteStock() {
   const cant = parseInt(document.getElementById('ajuste-cantidad').value) || 0;
   const motivo = document.getElementById('ajuste-motivo').value.trim();
   if (cant <= 0) { toast('Cantidad inválida.', 'error'); return; }
-  const p = db.stock.find(x => x.id === id);
+  const p = db.stock.find(x => x.id == id);
   if (!p) return;
   const anterior = p.cantidad;
   if (tipo === 'suma') p.cantidad += cant;
@@ -2369,7 +2371,7 @@ function autoSelectSiUnico() {
 
 // ── DEVOLUCIÓN / CAMBIO ─────────────────────────────────────────────────
 function abrirDevolucionIngreso(id) {
-  const ingreso = db.ingresos.find(x => x.id === id);
+  const ingreso = db.ingresos.find(x => x.id == id);
   if (!ingreso || !ingreso.productos || !ingreso.productos.length) {
     toast('Este ingreso no tiene productos vinculados.', 'error');
     return;
@@ -2474,7 +2476,7 @@ function buscarProductoCambio() {
 }
 
 function agregarAlCarritoCambio(prodId) {
-  const p = db.stock.find(x => x.id === prodId);
+  const p = db.stock.find(x => x.id == prodId);
   if (!p) return;
   const existente = carritoCambio.find(x => x.producto.id === prodId);
   if (existente) {
@@ -2542,7 +2544,7 @@ async function confirmarDevolucion() {
 
   // 1. Sumar al stock los productos devueltos
   devueltos.forEach(dev => {
-    const prod = db.stock.find(x => x.id === dev.id) || db.stock.find(x => x.codigo === dev.codigo);
+    const prod = db.stock.find(x => x.id == dev.id) || db.stock.find(x => x.codigo === dev.codigo);
     if (prod) prod.cantidad += dev.cantidadDevuelta;
   });
 
@@ -2552,7 +2554,7 @@ async function confirmarDevolucion() {
   let totalCambio = 0;
   if (carritoCambio.length) {
     carritoCambio.forEach(item => {
-      const prod = db.stock.find(x => x.id === item.producto.id);
+      const prod = db.stock.find(x => x.id == item.producto.id);
       if (prod) prod.cantidad = Math.max(0, prod.cantidad - item.cantidad);
     });
     totalCambio = carritoCambio.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
@@ -2596,7 +2598,7 @@ async function confirmarDevolucionStock() {
   const cant = parseInt(document.getElementById('dev-stock-cantidad').value) || 0;
   const motivo = document.getElementById('dev-stock-motivo').value.trim() || 'Devolución rápida';
   if (cant <= 0) { toast('Cantidad inválida.', 'error'); return; }
-  const p = db.stock.find(x => x.id === prodId);
+  const p = db.stock.find(x => x.id == prodId);
   if (!p) return;
   p.cantidad += cant;
   const monto = (p.precio || 0) * cant;
