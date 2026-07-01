@@ -905,7 +905,7 @@ function openModal(id) {
 
 function ajusteStock(id) {
   const p = db.stock.find(x => x.id == id);
-  if (!p) return;
+  if (!p) { alert('Producto no encontrado con id='+id+' tipo='+typeof id); return; }
   document.getElementById('ajuste-prod-id').value = id;
   document.getElementById('ajuste-prod-info').innerHTML =
     '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
@@ -917,7 +917,7 @@ function ajusteStock(id) {
 
 function abrirDevolucionStock(prodId) {
   const p = db.stock.find(x => x.id == prodId);
-  if (!p) return;
+  if (!p) { alert('Producto no encontrado con prodId='+prodId+' tipo='+typeof prodId+' stock='+db.stock.length); return; }
   document.getElementById('dev-stock-prod-id').value = prodId;
   document.getElementById('dev-stock-prod-info').innerHTML =
     '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
@@ -2083,8 +2083,8 @@ function renderStock() {
       <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
       <td>
         <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px" data-action="editar" data-id="${p.id}">✏</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="ajusteStock(this.dataset.id)">±</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#b8860b" data-action="devolucion" data-id="${p.id}" title="Devolución rápida" onclick="abrirDevolucionStock(this.dataset.id)">↩</button>
+        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="alert('id='+this.dataset.id);ajusteStock(this.dataset.id)">±</button>
+        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#b8860b" data-action="devolucion" data-id="${p.id}" title="Devolución rápida" onclick="alert('id='+this.dataset.id);abrirDevolucionStock(this.dataset.id)">↩</button>
         <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:var(--danger)" data-action="eliminar" data-id="${p.id}">🗑</button>
       </td>
     </tr>`;
