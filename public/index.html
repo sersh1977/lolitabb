@@ -881,21 +881,13 @@ function renderPage(page) {
 //  MODALES
 // ══════════════════════════════════════
 function openModal(id) {
-  const el = document.getElementById(id);
+  let el = document.getElementById(id);
   if (!el) { console.error('Error: modal no encontrado', id); return; }
+  if (el.parentElement && el.parentElement !== document.body) {
+    document.body.appendChild(el);
+  }
   el.style.display = 'flex';
-  console.log('Modal ' + id + ' abierto.', 'parent:', el.parentElement?.id || el.parentElement?.tagName);
-  console.log('offsetHeight:', el.offsetHeight, 'parentHidden:', el.parentElement && getComputedStyle(el.parentElement).display === 'none');
-}
-
-// ── MODAL DE PRUEBA ──────────────────────────────────────
-function testModal() {
-  const d = document.createElement('div');
-  d.id = 'test-modal-xyz';
-  d.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:red;display:flex;align-items:center;justify-content:center';
-  d.innerHTML = '<div style="background:white;padding:40px;border-radius:16px"><h2>MODAL DE PRUEBA</h2><button onclick="this.parentElement.parentElement.remove()">Cerrar</button></div>';
-  document.body.appendChild(d);
-  console.log('testModal offsetHeight:', d.offsetHeight);
+  console.log('Modal ' + id + ' abierto.');
 }
 
 function ajusteStock(id) {
@@ -2069,7 +2061,7 @@ function renderStock() {
       <td style="font-weight:500">${fmtMoney(p.precio||0)}</td>
       <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
       <td>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="testModal()">±</button>
+        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="ajusteStock(this.dataset.id)">±</button>
       </td>
     </tr>`;
   }).join('');
