@@ -107,7 +107,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text-mai
 .card-body{padding:20px 22px}
 
 /* MODAL */
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;background:rgba(200,0,0,0.5);display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:999;background:rgba(11,110,110,0.5);display:none;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
 .modal{background:var(--white);border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
 .modal-header{padding:22px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
@@ -883,29 +883,13 @@ function renderPage(page) {
 function openModal(id) {
   const el = document.getElementById(id);
   if (!el) { console.error('Error: modal no encontrado', id); return; }
-  el.classList.add('open');
-  console.log('Modal ' + id + ' abierto. Display:', getComputedStyle(el).display);
-  
-  setTimeout(() => {
-    if (!el.classList.contains('open')) {
-      console.error('¡Alerta! El modal ' + id + ' se cerró solo inmediatamente');
-    }
-  }, 100);
-
-  if (id==='modal-ingreso') {
-    poblarConceptosIngreso();
-    const c = document.getElementById('ing-concepto');
-    if (c && !c.value) c.value = 'Ventas';
-  } else if (id==='modal-gasto') {
-    poblarConceptosGasto();
-  } else if (id==='modal-tema') {
-    renderTemaGrid(localStorage.getItem('cbk_tema')||'turquesa');
-  }
+  el.style.display = 'flex';
+  console.log('Modal ' + id + ' abierto.');
 }
 
 function ajusteStock(id) {
   const p = db.stock.find(x => x.id == id);
-  if (!p) { alert('Producto no encontrado con id='+id+' tipo='+typeof id); return; }
+  if (!p) return;
   document.getElementById('ajuste-prod-id').value = id;
   document.getElementById('ajuste-prod-info').innerHTML =
     '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
@@ -917,7 +901,7 @@ function ajusteStock(id) {
 
 function abrirDevolucionStock(prodId) {
   const p = db.stock.find(x => x.id == prodId);
-  if (!p) { alert('Producto no encontrado con prodId='+prodId+' tipo='+typeof prodId+' stock='+db.stock.length); return; }
+  if (!p) return;
   document.getElementById('dev-stock-prod-id').value = prodId;
   document.getElementById('dev-stock-prod-info').innerHTML =
     '<strong>' + esc(p.nombre) + '</strong> — ' + esc(p.talle||'') + ' ' + esc(p.color||'') +
@@ -927,9 +911,9 @@ function abrirDevolucionStock(prodId) {
   openModal('modal-devolver-stock');
 }
 
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
 document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); });
+  m.addEventListener('click', e => { if(e.target===m) m.style.display = 'none'; });
 });
 document.addEventListener('click', function(e) {
   const btn = e.target.closest('.stock-btn');
@@ -2083,8 +2067,8 @@ function renderStock() {
       <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
       <td>
         <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px" data-action="editar" data-id="${p.id}">✏</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="alert('id='+this.dataset.id);ajusteStock(this.dataset.id)">±</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#b8860b" data-action="devolucion" data-id="${p.id}" title="Devolución rápida" onclick="alert('id='+this.dataset.id);abrirDevolucionStock(this.dataset.id)">↩</button>
+        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="ajusteStock(this.dataset.id)">±</button>
+        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#b8860b" data-action="devolucion" data-id="${p.id}" title="Devolución rápida" onclick="abrirDevolucionStock(this.dataset.id)">↩</button>
         <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:var(--danger)" data-action="eliminar" data-id="${p.id}">🗑</button>
       </td>
     </tr>`;
