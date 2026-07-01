@@ -883,8 +883,16 @@ function renderPage(page) {
 function openModal(id) {
   const el = document.getElementById(id);
   if (!el) { console.error('Error: modal no encontrado', id); return; }
-  el.style.cssText = 'display:flex !important;background:red !important;position:fixed !important;top:0!important;left:0!important;right:0!important;bottom:0!important;z-index:9999!important';
-  console.log('Modal ' + id + ' abierto.');
+  el.style.display = 'flex';
+  el.style.backgroundColor = 'red';
+  el.style.position = 'fixed';
+  el.style.top = '0px';
+  el.style.left = '0px';
+  el.style.width = '100vw';
+  el.style.height = '100vh';
+  el.style.zIndex = '9999';
+  const cs = getComputedStyle(el);
+  console.log('Modal ' + id + ' visible:', el.offsetHeight > 0, 'display:', cs.display, 'bg:', cs.backgroundColor);
 }
 
 function ajusteStock(id) {
@@ -896,7 +904,6 @@ function ajusteStock(id) {
     '<br>Código: <code>' + esc(p.codigo) + '</code> | Stock actual: <strong>' + p.cantidad + '</strong>';
   document.getElementById('ajuste-cantidad').value = 1;
   document.getElementById('ajuste-motivo').value = '';
-  document.body.style.background = 'red';
   openModal('modal-ajuste-stock');
 }
 
