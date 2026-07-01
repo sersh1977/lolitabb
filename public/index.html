@@ -2012,10 +2012,10 @@ function renderStock() {
   else if (filterStock === 'bajo-stock') items = items.filter(p => p.cantidad > 0 && p.cantidad <= 3);
   if (buscar) {
     items = items.filter(p =>
-      (p.codigo||'').toLowerCase().includes(buscar) ||
-      (p.nombre||'').toLowerCase().includes(buscar) ||
-      (p.talle||'').toLowerCase().includes(buscar) ||
-      (p.color||'').toLowerCase().includes(buscar)
+      (p.codigo||'').toLowerCase().startsWith(buscar) ||
+      (p.nombre||'').toLowerCase().startsWith(buscar) ||
+      (p.talle||'').toLowerCase().startsWith(buscar) ||
+      (p.color||'').toLowerCase().startsWith(buscar)
     );
     paginaStock = 1; // reset page on search
   }
