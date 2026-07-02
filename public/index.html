@@ -505,9 +505,10 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="card">
         <div class="card-header">
           <h4>🗄️ Productos DBF Original</h4>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input type="text" id="dbf-buscar" placeholder="🔍 Buscar por código o nombre..." style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderDBF()">
             <span style="font-size:12px;color:var(--text-soft);align-self:center" id="dbf-count"></span>
+            <button class="btn btn-primary" onclick="importarDBFaStock()" style="padding:6px 14px;font-size:12px">⬇ Importar a Stock</button>
           </div>
         </div>
         <div class="table-wrap"><table><thead><tr>
@@ -1851,6 +1852,30 @@ async function renderDBF() {
       <td>${p.stock}</td>
     </tr>`;
   }).join('');
+}
+
+async function importarDBFaStock() {
+  if (!dbfData.length) { toast('Primero cargá la página DBF.', 'error'); return; }
+  if (!confirm(`¿Importar ${dbfData.length} productos desde DBF al stock operativo? Se reemplazarán todos los registros actuales (${db.stock.length}).`)) return;
+  const nuevos = dbfData.map(p => ({
+    id: 'dbf_' + p.codigo,
+    codigo: p.codigo,
+    nombre: p.nombre || 'S/N',
+    talle: p.talle || '',
+    color: p.color || '',
+    precio: p.APR3 || 0,
+    cantidad: p.stock || 0,
+    precioSugerido: p.APR4 || 0,
+    precioContado: p.APR5 || 0,
+    precioTarjeta: p.APR6 || 0,
+    notas: 'Importado desde DBF Lince',
+    creadoEn: new Date().toISOString()
+  }));
+  db.stock = nuevos;
+  await saveDB();
+  logAudit('STOCK_IMPORT_DBF', `Importados ${nuevos.length} productos desde DBF (${nuevos.reduce((s,x)=>s+x.cantidad,0)} unidades)`);
+  renderStock();
+  toast(`✓ Stock actualizado: ${nuevos.length} productos, ${nuevos.reduce((s,x)=>s+x.cantidad,0)} unidades`, 'success');
 }
 
 // ══════════════════════════════════════
