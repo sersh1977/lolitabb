@@ -2332,30 +2332,35 @@ function buscarProductoVenta() {
     cont.style.display = 'block';
     return;
   }
-  const lista = document.getElementById('venta-lista-precio')?.value || 'precioTarjeta';
+  const L = window._listaPorDefecto || 'precioTarjeta';
   cont.innerHTML = resultados.map(p => {
-    const precio = p[lista] || p.precio || 0;
-    return `<div class="prod-result-item" onclick="agregarAlCarrito('${p.id}')">
-      <div>
+    const p3 = p.precioSugerido || 0, p4 = p.precioContado || 0, p5 = p.precioTarjeta || 0;
+    const sel = `onclick="event.stopPropagation();agregarAlCarrito('${p.id}','precioSugerido')"`;
+    const sel2 = `onclick="event.stopPropagation();agregarAlCarrito('${p.id}','precioContado')"`;
+    const sel3 = `onclick="event.stopPropagation();agregarAlCarrito('${p.id}','precioTarjeta')"`;
+    return `<div class="prod-result-item" style="cursor:default">
+      <div style="flex:1">
         <strong>${esc(p.nombre)}</strong>
         <span style="color:var(--text-soft);margin-left:8px">${esc(p.talle||'')} ${esc(p.color||'')}</span>
         <br><code style="font-size:11px;color:var(--text-soft)">${esc(p.codigo)}</code>
       </div>
-      <div style="text-align:right">
-        <div style="font-weight:500;color:var(--coffee)">${fmtMoney(precio)}</div>
-        <div style="font-size:11px;color:var(--text-soft)">Stock: ${p.cantidad}</div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button ${sel} class="btn-sm ${L==='precioSugerido'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L3 $${fmtMoney(p3)}</button>
+        <button ${sel2} class="btn-sm ${L==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L4 $${fmtMoney(p4)}</button>
+        <button ${sel3} class="btn-sm ${L==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L5 $${fmtMoney(p5)}</button>
       </div>
     </div>`;
   }).join('');
   cont.style.display = 'block';
 }
 
-function agregarAlCarrito(prodId) {
+function agregarAlCarrito(prodId, lista) {
   const p = db.stock.find(x => x.id == prodId);
   if (!p) return;
-  const lista = document.getElementById('venta-lista-precio')?.value || 'precioTarjeta';
+  if (!lista) lista = 'precioTarjeta';
+  window._listaPorDefecto = lista;
   const precioUsado = p[lista] || p.precio || 0;
-  const existente = carritoVenta.find(x => x.producto.id === prodId);
+  const existente = carritoVenta.find(x => x.producto.id === prodId && x.lista === lista);
   if (existente) {
     if (existente.cantidad >= p.cantidad) { toast(`Solo hay ${p.cantidad} en stock.`, 'error'); return; }
     existente.cantidad++;
@@ -2369,22 +2374,22 @@ function agregarAlCarrito(prodId) {
 
 function renderCarrito() {
   const cont = document.getElementById('venta-carrito');
-  const listaActual = document.getElementById('venta-lista-precio')?.value || 'precioTarjeta';
-  carritoVenta.forEach(item => {
-    item.lista = listaActual;
-    item.precioUsado = item.producto[listaActual] || item.producto.precio || 0;
-  });
   if (!carritoVenta.length) {
     cont.innerHTML = '<div style="text-align:center;color:var(--text-soft);font-size:13px;padding:16px">Buscá o escaneá un producto para agregarlo</div>';
     document.getElementById('venta-total').textContent = '$0,00';
     return;
   }
-  cont.innerHTML = carritoVenta.map((item, i) => `
-    <div class="carrito-item">
-      <div class="carrito-item-info">
+  cont.innerHTML = carritoVenta.map((item, i) => {
+    const p3 = item.producto.precioSugerido || 0, p4 = item.producto.precioContado || 0, p5 = item.producto.precioTarjeta || 0;
+    return `<div class="carrito-item">
+      <div class="carrito-item-info" style="flex:1">
         <strong>${esc(item.producto.nombre)}</strong>
         <span style="color:var(--text-soft);font-size:12px;margin-left:6px">${esc(item.producto.talle||'')} ${esc(item.producto.color||'')}</span>
-        <div style="font-size:12px;color:var(--coffee);font-weight:500">${fmtMoney(item.precioUsado||0)} c/u</div>
+        <div style="display:flex;gap:4px;margin-top:4px">
+          <span class="btn-sm ${item.lista==='precioSugerido'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioSugerido')">L3 $${fmtMoney(p3)}</span>
+          <span class="btn-sm ${item.lista==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioContado')">L4 $${fmtMoney(p4)}</span>
+          <span class="btn-sm ${item.lista==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioTarjeta')">L5 $${fmtMoney(p5)}</span>
+        </div>
       </div>
       <div class="carrito-item-qty">
         <button class="qty-btn" onclick="cambiarCantCarrito(${i},-1)">−</button>
@@ -2392,10 +2397,18 @@ function renderCarrito() {
         <button class="qty-btn" onclick="cambiarCantCarrito(${i},1)">+</button>
         <button class="qty-btn" style="color:var(--danger);margin-left:4px" onclick="quitarDelCarrito(${i})">✕</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   const total = carritoVenta.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
   document.getElementById('venta-total').textContent = fmtMoney(total);
+}
+
+function cambiarListaCarrito(i, lista) {
+  const item = carritoVenta[i];
+  if (!item) return;
+  item.lista = lista;
+  item.precioUsado = item.producto[lista] || item.producto.precio || 0;
+  renderCarrito();
 }
 
 function cambiarCantCarrito(i, delta) {
@@ -2806,14 +2819,7 @@ iniciarApp();
     <div class="modal-body">
       <div class="form-group">
         <label>Buscar o escanear código</label>
-      <div class="form-group">
-        <label>Lista de precios</label>
-        <select id="venta-lista-precio" style="width:100%;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);margin-bottom:8px" onchange="buscarProductoVenta();renderCarrito()">
-          <option value="precioSugerido">Lista 3</option>
-          <option value="precioContado">Lista 4</option>
-          <option value="precioTarjeta" selected>Lista 5</option>
-        </select>
-      </div>
+
       <div class="form-group">
         <label>Buscar o escanear código de barras</label>
         <input type="text" id="venta-buscar-prod" placeholder="Escanear código o escribir nombre..." autofocus oninput="buscarProductoVenta()" onkeydown="if(event.key==='Enter'){event.preventDefault();autoSelectSiUnico();}" style="font-size:14px;font-family:monospace" autocomplete="off">
