@@ -1826,7 +1826,7 @@ let dbfData = [];
 async function renderDBF() {
   if (!dbfData.length) {
     try {
-      const r = await fetch('dbf-data.json');
+      const r = await fetch('dbf-data.json?_=' + Date.now());
       dbfData = await r.json();
     } catch(e) {
       document.getElementById('tabla-dbf').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-soft)">Error al cargar datos DBF</td></tr>';
@@ -1856,26 +1856,58 @@ async function renderDBF() {
 
 async function importarDBFaStock() {
   if (!dbfData.length) { toast('Primero cargá la página DBF.', 'error'); return; }
-  if (!confirm(`¿Importar ${dbfData.length} productos desde DBF al stock operativo? Se reemplazarán todos los registros actuales (${db.stock.length}).`)) return;
-  const nuevos = dbfData.map(p => ({
-    id: 'dbf_' + p.codigo,
-    codigo: p.codigo,
-    nombre: p.nombre || 'S/N',
-    talle: p.talle || '',
-    color: p.color || '',
-    precio: p.APR3 || 0,
-    cantidad: p.stock || 0,
-    precioSugerido: p.APR4 || 0,
-    precioContado: p.APR5 || 0,
-    precioTarjeta: p.APR6 || 0,
-    notas: 'Importado desde DBF Lince',
-    creadoEn: new Date().toISOString()
-  }));
-  db.stock = nuevos;
+  const mapaDBF = {};
+  dbfData.forEach(p => { mapaDBF[p.codigo] = p; });
+  const codigosDBF = new Set(dbfData.map(p => p.codigo));
+  const conservados = db.stock.filter(p => !codigosDBF.has(p.codigo));
+  const actualizados = [];
+  const agregados = [];
+  const mapaExistente = {};
+  db.stock.forEach(p => {
+    if (codigosDBF.has(p.codigo)) {
+      if (!mapaExistente[p.codigo]) mapaExistente[p.codigo] = [];
+      mapaExistente[p.codigo].push(p);
+    }
+  });
+  for (const cod of codigosDBF) {
+    const d = mapaDBF[cod];
+    const existentes = mapaExistente[cod] || [];
+    if (existentes.length > 0) {
+      const stockTotalViejo = existentes.reduce((s,x)=>s+(x.cantidad||0),0);
+      const stockNuevo = d.stock || 0;
+      const factor = stockTotalViejo > 0 ? stockNuevo / stockTotalViejo : 0;
+      existentes.forEach(x => {
+        x.cantidad = factor > 0 ? Math.round((x.cantidad||0) * factor) : 0;
+        x.precio = d.APR3 || x.precio || 0;
+        x.precioSugerido = d.APR4 || x.precioSugerido || 0;
+        x.precioContado = d.APR5 || x.precioContado || 0;
+        x.precioTarjeta = d.APR6 || x.precioTarjeta || 0;
+        actualizados.push(x);
+      });
+    } else {
+      agregados.push({
+        id: 'dbf_' + d.codigo,
+        codigo: d.codigo,
+        nombre: d.nombre || 'S/N',
+        talle: d.talle || '',
+        color: d.color || '',
+        precio: d.APR3 || 0,
+        cantidad: d.stock || 0,
+        precioSugerido: d.APR4 || 0,
+        precioContado: d.APR5 || 0,
+        precioTarjeta: d.APR6 || 0,
+        notas: 'Importado desde DBF Lince',
+        creadoEn: new Date().toISOString()
+      });
+    }
+  }
+  const totalAntes = db.stock.length;
+  db.stock = [...conservados, ...actualizados, ...agregados];
+  const totalUnidades = db.stock.reduce((s,x)=>s+(x.cantidad||0),0);
   await saveDB();
-  logAudit('STOCK_IMPORT_DBF', `Importados ${nuevos.length} productos desde DBF (${nuevos.reduce((s,x)=>s+x.cantidad,0)} unidades)`);
+  logAudit('STOCK_IMPORT_DBF', `Fusionados: ${conservados.length} conservados, ${actualizados.length} actualizados, ${agregados.length} agregados (${totalUnidades} unidades)`);
   renderStock();
-  toast(`✓ Stock actualizado: ${nuevos.length} productos, ${nuevos.reduce((s,x)=>s+x.cantidad,0)} unidades`, 'success');
+  toast(`✓ Stock fusionado: ${db.stock.length} productos, ${totalUnidades} unidades`, 'success');
 }
 
 // ══════════════════════════════════════
