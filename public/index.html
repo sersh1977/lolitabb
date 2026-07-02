@@ -2417,11 +2417,18 @@ function agregarAlCarrito(prodId, lista) {
     if (existente.cantidad >= p.cantidad) { toast(`Solo hay ${p.cantidad} en stock.`, 'error'); return; }
     existente.cantidad++;
   } else {
-    carritoVenta.push({ producto: p, cantidad: 1, lista, precioUsado });
+    carritoVenta.push({ producto: p, cantidad: 1, lista, precioUsado, descuentoTipo: 'porcentaje', descuentoValor: 0 });
   }
   document.getElementById('venta-buscar-prod').value = '';
   document.getElementById('venta-resultados-prod').style.display = 'none';
   renderCarrito();
+}
+
+function precioConDescuento(item) {
+  const base = item.precioUsado || 0;
+  const val = parseFloat(item.descuentoValor) || 0;
+  if (item.descuentoTipo === 'monto') return Math.max(0, base - val);
+  return base * (1 - Math.min(100, Math.max(0, val)) / 100);
 }
 
 function renderCarrito() {
@@ -2433,8 +2440,11 @@ function renderCarrito() {
   }
   cont.innerHTML = carritoVenta.map((item, i) => {
     const p3 = item.producto.precioSugerido || 0, p4 = item.producto.precioContado || 0, p5 = item.producto.precioTarjeta || 0;
+    const dtoPct = item.descuentoTipo === 'porcentaje';
+    const unitFinal = precioConDescuento(item);
+    const subTotal = unitFinal * item.cantidad;
     return `<div class="carrito-item">
-      <div class="carrito-item-info" style="flex:1">
+      <div class="carrito-item-info" style="flex:1;min-width:0">
         <strong>${esc(item.producto.nombre)}</strong>
         <span style="color:var(--text-soft);font-size:12px;margin-left:6px">${esc(item.producto.talle||'')} ${esc(item.producto.color||'')}</span>
         <div style="display:flex;gap:4px;margin-top:4px">
@@ -2442,17 +2452,53 @@ function renderCarrito() {
           <span class="btn-sm ${item.lista==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioContado')">L4 $${fmtMoney(p4)}</span>
           <span class="btn-sm ${item.lista==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioTarjeta')">L5 $${fmtMoney(p5)}</span>
         </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+          <span class="btn-sm ${item.descuentoTipo==='porcentaje'?'btn-primary':'btn-ghost'}" style="padding:1px 5px;font-size:10px;cursor:pointer;min-width:18px;text-align:center" onclick="cambiarTipoDescuentoCarrito(${i})">%</span>
+          <span class="btn-sm ${item.descuentoTipo==='monto'?'btn-primary':'btn-ghost'}" style="padding:1px 5px;font-size:10px;cursor:pointer;min-width:18px;text-align:center" onclick="cambiarTipoDescuentoCarrito(${i})">$</span>
+          <input type="number" class="dto-input" value="${item.descuentoValor}" min="0" max="${dtoPct?100:999999}" step="any"
+            onchange="cambiarDescuentoCarrito(${i},this.value)"
+            oninput="cambiarDescuentoCarrito(${i},this.value)"
+            style="width:52px;padding:2px 4px;font-size:11px;border:1px solid var(--border);border-radius:3px;text-align:center;background:var(--cream)">
+          <span style="font-size:11px;color:var(--text-soft)">→ <span class="money-val">${fmtMoney(unitFinal)}</span> /u</span>
+        </div>
       </div>
-      <div class="carrito-item-qty">
-        <button class="qty-btn" onclick="cambiarCantCarrito(${i},-1)">−</button>
-        <span style="min-width:20px;text-align:center;font-weight:500">${item.cantidad}</span>
-        <button class="qty-btn" onclick="cambiarCantCarrito(${i},1)">+</button>
-        <button class="qty-btn" style="color:var(--danger);margin-left:4px" onclick="quitarDelCarrito(${i})">✕</button>
+      <div class="carrito-item-qty" style="align-items:flex-end">
+        <div style="display:flex;align-items:center;gap:2px">
+          <button class="qty-btn" onclick="cambiarCantCarrito(${i},-1)">−</button>
+          <span style="min-width:20px;text-align:center;font-weight:500">${item.cantidad}</span>
+          <button class="qty-btn" onclick="cambiarCantCarrito(${i},1)">+</button>
+          <button class="qty-btn" style="color:var(--danger);margin-left:4px" onclick="quitarDelCarrito(${i})">✕</button>
+        </div>
+        <div style="font-size:12px;font-weight:600;margin-top:4px;white-space:nowrap" class="money-val">${fmtMoney(subTotal)}</div>
       </div>
     </div>`;
   }).join('');
-  const total = carritoVenta.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
+
+  const total = carritoVenta.reduce((s, item) => s + precioConDescuento(item) * item.cantidad, 0);
   document.getElementById('venta-total').textContent = fmtMoney(total);
+}
+
+function cambiarDescuentoCarrito(i, val) {
+  const item = carritoVenta[i];
+  if (!item) return;
+  const n = parseFloat(val) || 0;
+  const max = item.descuentoTipo === 'porcentaje' ? 100 : (item.precioUsado || 0);
+  item.descuentoValor = Math.max(0, Math.min(max, n));
+  renderCarrito();
+}
+
+function cambiarTipoDescuentoCarrito(i) {
+  const item = carritoVenta[i];
+  if (!item) return;
+  item.descuentoTipo = item.descuentoTipo === 'porcentaje' ? 'monto' : 'porcentaje';
+  if (item.descuentoValor > 0) {
+    if (item.descuentoTipo === 'porcentaje') {
+      item.descuentoValor = Math.min(100, (item.descuentoValor / (item.precioUsado || 1)) * 100);
+    } else {
+      item.descuentoValor = Math.min(item.precioUsado || 0, (item.descuentoValor / 100) * (item.precioUsado || 0));
+    }
+  }
+  renderCarrito();
 }
 
 function cambiarListaCarrito(i, lista) {
@@ -2479,7 +2525,7 @@ function quitarDelCarrito(i) {
 
 async function confirmarVentaProductos() {
   if (!carritoVenta.length) { toast('Agregá al menos un producto.', 'error'); return; }
-  const total = carritoVenta.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
+  const total = carritoVenta.reduce((s, item) => s + precioConDescuento(item) * item.cantidad, 0);
   const detalle = carritoVenta.map(item => `${item.producto.nombre} x${item.cantidad}`).join(', ');
   
   // Descontar del stock — buscar por id Y por codigo como fallback
@@ -2496,7 +2542,9 @@ async function confirmarVentaProductos() {
     talle: item.producto.talle || '',
     color: item.producto.color || '',
     cantidad: item.cantidad,
-    precio: item.precioUsado || 0
+    precio: precioConDescuento(item),
+    descuentoTipo: item.descuentoTipo,
+    descuentoValor: item.descuentoValor
   }));
 
   // Actualizar monto en el modal de ingreso
