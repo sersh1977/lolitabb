@@ -300,6 +300,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <div class="stat-card income"><div class="stat-label">Ingresos hoy</div><div class="stat-value money-val" id="stat-ing-hoy">$0,00</div><div class="stat-sub">Total del día</div></div>
         <div class="stat-card expense"><div class="stat-label">Gastos hoy</div><div class="stat-value money-val" id="stat-gast-hoy">$0,00</div><div class="stat-sub">Total del día</div></div>
         <div class="stat-card balance"><div class="stat-label">Balance del mes</div><div class="stat-value money-val" id="stat-balance-mes">$0,00</div><div class="stat-sub" id="stat-balance-sub">Superávit del mes</div></div>
+        <div class="stat-card balance" style="border-left-color:var(--coffee)"><div class="stat-label">Balance general</div><div class="stat-value money-val" id="stat-balance-general">$0,00</div><div class="stat-sub">Desde el inicio</div></div>
         <div class="stat-card pending" style="cursor:pointer" onclick="goTo('acreditaciones')" title="Ver detalle en Acreditaciones"><div class="stat-label">Por acreditar (próx. 7 días, neto)</div><div class="stat-value money-val" id="stat-acreditar">$0,00</div><div class="stat-sub">Click para ver detalle en Acreditaciones</div></div>
       </div>
       <div class="chart-grid">
@@ -327,7 +328,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
             <button class="filter-btn" onclick="setFilter('ingresos','mes',this)">Este mes</button>
             <button class="filter-btn" onclick="setFilter('ingresos','todo',this)">Todo</button>
           </div>
-          <div style="display:flex;gap:8px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="date" id="excel-fecha-desde" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:var(--cream)">
+            <span style="font-size:12px;color:var(--text-soft)">→</span>
+            <input type="date" id="excel-fecha-hasta" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:12px;background:var(--cream)">
+            <button class="btn-export" onclick="exportarExcelVentas()" style="background:#1FA88A">⬇ Excel</button>
             <button class="btn-export" onclick="exportarCSV('ingresos')">⬇ CSV</button>
             <button class="btn-export pdf" onclick="exportarPDF('ingresos')">⬇ PDF</button>
             <button class="btn btn-primary" onclick="openModal('modal-ingreso')" style="padding:8px 16px;font-size:13px">+ Nuevo ingreso</button>
@@ -1474,6 +1479,9 @@ function renderDashboard() {
   document.getElementById('stat-balance-mes').textContent=fmtMoney(balance);
   document.getElementById('stat-balance-mes').style.color=balance>=0?'var(--mint-dark)':'var(--danger)';
   document.getElementById('stat-balance-sub').textContent=balance>=0?'Superávit del mes':'Déficit del mes';
+  const balanceGeneral = db.ingresos.reduce((a,b)=>a+b.monto,0) - db.gastos.reduce((a,b)=>a+b.monto,0);
+  const elBalGen = document.getElementById('stat-balance-general');
+  if (elBalGen) { elBalGen.textContent = fmtMoney(balanceGeneral); elBalGen.style.color = balanceGeneral>=0?'var(--mint-dark)':'var(--danger)'; }
   const acreditaciones=obtenerAcreditaciones();
   const totalAcreditar=acreditaciones.filter(x=>{
     if(x.acreditado) return false;
@@ -1879,6 +1887,7 @@ async function importarDBFaStock() {
       const factor = stockTotalViejo > 0 ? stockNuevo / stockTotalViejo : 0;
       existentes.forEach(x => {
         x.cantidad = factor > 0 ? Math.round((x.cantidad||0) * factor) : 0;
+        x.apr2 = d.APR2 || x.apr2 || 0;
         x.precio = d.APR3 || x.precio || 0;
         x.precioSugerido = d.APR4 || x.precioSugerido || 0;
         x.precioContado = d.APR5 || x.precioContado || 0;
@@ -1892,6 +1901,7 @@ async function importarDBFaStock() {
         nombre: d.nombre || 'S/N',
         talle: d.talle || '',
         color: d.color || '',
+        apr2: d.APR2 || 0,
         precio: d.APR3 || 0,
         cantidad: d.stock || 0,
         precioSugerido: d.APR4 || 0,
@@ -1940,6 +1950,50 @@ function exportarCSV(tipo) {
   const a=document.createElement('a'); a.href=url; a.download=filename; a.click();
   URL.revokeObjectURL(url);
   toast('CSV exportado ✓','success');
+}
+
+// ══════════════════════════════════════
+//  EXPORTAR EXCEL VENTAS
+// ══════════════════════════════════════
+function exportarExcelVentas() {
+  const desde = document.getElementById('excel-fecha-desde').value;
+  const hasta = document.getElementById('excel-fecha-hasta').value;
+  if (!desde || !hasta) { toast('Seleccioná fecha desde y hasta','warn'); return; }
+
+  const data = db.ingresos.filter(r => {
+    const d = r.fecha;
+    return d >= desde && d <= hasta;
+  }).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.concepto.localeCompare(b.concepto));
+
+  if (!data.length) { toast('Sin ventas en ese período','warn'); return; }
+
+  const total = data.reduce((a,b) => a + b.monto, 0);
+  const rows = data.map(r => `<tr>
+    <td>${r.fecha}</td><td>${r.concepto}</td><td>${r.tipo||''}</td>
+    <td>${r.banco||''}</td><td>${r.modalidad||''}</td>
+    <td>${r.cuotas||''}</td><td style="text-align:right">$${Number(r.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+  </tr>`).join('');
+
+  const html = `<html><head><meta charset="utf-8"><style>
+    table { border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;width:100% }
+    th { background:#E0A87A;color:#fff;padding:8px 10px;text-align:left }
+    td { border:1px solid #ccc;padding:6px 10px }
+    .total { font-weight:700;background:#f5f0eb }
+  </style></head><body>
+    <h2>Ventas — ${desde} al ${hasta}</h2>
+    <table>
+      <thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th>Procesador</th><th>Modalidad</th><th>Cuotas</th><th>Monto</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr class="total"><td colspan="6" style="text-align:right">TOTAL</td><td style="text-align:right">$${total.toLocaleString('es-AR',{minimumFractionDigits:2})}</td></tr></tfoot>
+    </table>
+    <p style="font-family:Arial;font-size:11px;color:#666">Generado el ${new Date().toLocaleDateString('es-AR')} — App LolitaBB</p>
+  </body></html>`;
+
+  const blob = new Blob(['\uFEFF' + html], {type:'application/vnd.ms-excel'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = `ventas-${desde}-a-${hasta}.xls`; a.click();
+  URL.revokeObjectURL(url);
+  toast('Excel exportado ✓','success');
 }
 
 // ══════════════════════════════════════
@@ -2131,7 +2185,7 @@ function renderStock() {
   const total = db.stock.length;
   const bajo = db.stock.filter(p => p.cantidad > 0 && p.cantidad <= 3).length;
   const sin = db.stock.filter(p => p.cantidad <= 0).length;
-  const valor = db.stock.reduce((s, p) => s + (p.precio || 0) * (p.cantidad || 0), 0);
+  const valor = db.stock.reduce((s, p) => s + (p.apr2 || p.precio || 0) * (p.cantidad || 0), 0);
   const stTotal = document.getElementById('st-total');
   const stBajo = document.getElementById('st-bajo');
   const stSin = document.getElementById('st-sin');
