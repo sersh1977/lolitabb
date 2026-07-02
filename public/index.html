@@ -480,6 +480,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input type="text" id="stock-buscar" placeholder="🔍 Buscar o escanear código..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderStock()" onkeydown="if(event.key==='Enter'){event.preventDefault();renderStock()}">
       <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Nuevo producto</button>
+      <button class="btn btn-secondary" onclick="importarStockLince()" style="padding:8px 16px;font-size:13px">📥 Importar Lince</button>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
@@ -2291,6 +2292,57 @@ async function eliminarProducto(id) {
   logAudit('STOCK_ELIMINAR', `${p.nombre} (${p.codigo})`);
   renderStock();
   toast('Producto eliminado.', 'success');
+}
+
+async function importarStockLince() {
+  const cantActual = db.stock.length;
+  if (!confirm(`¿Importar stock desde archivo Lince (MY7)? Se conservarán los ${cantActual} registros actuales y se agregarán/actualizarán los del sistema Lince.`)) return;
+  try {
+    const r = await fetch('stock-lince.json?_=' + Date.now());
+    if (!r.ok) { toast('Error: no se encontró stock-lince.json', 'error'); return; }
+    const lince = await r.json();
+    const lincePorCodigo = {}; const quedan = [];
+    lince.forEach(l => {
+      if (!lincePorCodigo[l.codigo]) lincePorCodigo[l.codigo] = [];
+      lincePorCodigo[l.codigo].push(l);
+    });
+    const usados = new Set();
+    const actualizados = [];
+    db.stock.forEach(p => {
+      const coincidentes = (lincePorCodigo[p.codigo] || []).filter(x => !usados.has(x.id));
+      if (coincidentes.length > 0) {
+        const l = coincidentes[0]; usados.add(l.id);
+        p.cantidad = l.cantidad || p.cantidad;
+        p.precio = l.precio || p.precio;
+        p.precioSugerido = l.precioSugerido || p.precioSugerido;
+        p.precioContado = l.precioContado || p.precioContado;
+        p.precioTarjeta = l.precioTarjeta || p.precioTarjeta;
+        if (!p.talle && l.talle) p.talle = l.talle;
+        if (!p.color && l.color) p.color = l.color;
+        actualizados.push(p.codigo);
+      } else {
+        quedan.push(p);
+      }
+    });
+    const agregados = [];
+    lince.forEach(l => {
+      if (!usados.has(l.id)) {
+        quedan.push({
+          id: l.id, codigo: l.codigo, nombre: l.nombre, talle: l.talle || '', color: l.color || '',
+          precio: l.precio || 0, cantidad: l.cantidad || 0,
+          precioSugerido: l.precioSugerido || 0, precioContado: l.precioContado || 0, precioTarjeta: l.precioTarjeta || 0,
+          notas: 'MY7 Lince', creadoEn: new Date().toISOString()
+        });
+        agregados.push(l.codigo);
+      }
+    });
+    db.stock = quedan;
+    const unids = db.stock.reduce((s,x)=>s+(x.cantidad||0),0);
+    await saveDB();
+    logAudit('STOCK_IMPORT_LINCE', `Actualizados ${actualizados.length}, agregados ${agregados.length}, total ${db.stock.length} registros (${unids} unidades)`);
+    renderStock();
+    toast(`✓ Lince importado: ${db.stock.length} registros, ${unids} unidades`, 'success');
+  } catch(e) { toast('Error al importar Lince: ' + e.message, 'error'); }
 }
 
 // ── Venta con productos ────────────────────────────────────────────────────
