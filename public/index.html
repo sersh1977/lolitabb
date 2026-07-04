@@ -2457,7 +2457,6 @@ function renderCarrito() {
           <span class="btn-sm ${item.descuentoTipo==='monto'?'btn-primary':'btn-ghost'}" style="padding:1px 5px;font-size:10px;cursor:pointer;min-width:18px;text-align:center" onclick="cambiarTipoDescuentoCarrito(${i})">$</span>
           <input type="number" class="dto-input" value="${item.descuentoValor}" min="0" max="${dtoPct?100:999999}" step="any"
             onchange="cambiarDescuentoCarrito(${i},this.value)"
-            oninput="cambiarDescuentoCarrito(${i},this.value)"
             style="width:52px;padding:2px 4px;font-size:11px;border:1px solid var(--border);border-radius:3px;text-align:center;background:var(--cream)">
           <span style="font-size:11px;color:var(--text-soft)">→ <span class="money-val">${fmtMoney(unitFinal)}</span> /u</span>
         </div>
