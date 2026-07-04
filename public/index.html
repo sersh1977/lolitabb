@@ -1112,6 +1112,11 @@ async function guardarIngreso() {
   }
   if (ventaProductosActual.length) {
     reg.productos = ventaProductosActual;
+    // Descontar del stock al confirmar el ingreso
+    ventaProductosActual.forEach(item => {
+      const p = db.stock.find(x => x.id == item.id) || db.stock.find(x => x.codigo === item.codigo);
+      if (p) p.cantidad = Math.max(0, p.cantidad - item.cantidad);
+    });
     ventaProductosActual = [];
   }
 
@@ -2527,13 +2532,7 @@ async function confirmarVentaProductos() {
   const total = carritoVenta.reduce((s, item) => s + precioConDescuento(item) * item.cantidad, 0);
   const detalle = carritoVenta.map(item => `${item.producto.nombre} x${item.cantidad}`).join(', ');
   
-  // Descontar del stock — buscar por id Y por codigo como fallback
-  carritoVenta.forEach(item => {
-    const p = db.stock.find(x => x.id == item.producto.id) || db.stock.find(x => x.codigo === item.producto.codigo);
-    if (p) p.cantidad = Math.max(0, p.cantidad - item.cantidad);
-  });
-
-  // Guardar productos vendidos para vincularlos al ingreso
+  // Guardar productos vendidos para vincularlos al ingreso (stock se descuenta al guardar el ingreso)
   ventaProductosActual = carritoVenta.map(item => ({
     id: item.producto.id,
     codigo: item.producto.codigo,
@@ -2554,10 +2553,7 @@ async function confirmarVentaProductos() {
   }
 
   closeModal('modal-venta-productos');
-  toast(`Stock actualizado. Total: ${fmtMoney(total)} ✓`, 'success');
-  renderStock();
-  saveDB();
-  logAudit('VENTA_PRODUCTOS', `${detalle} — ${fmtMoney(total)}`);
+  toast(`Total: ${fmtMoney(total)} — completá el ingreso para confirmar ✓`, 'success');
 }
 
 async function confirmarAjusteStock() {
