@@ -2346,14 +2346,15 @@ async function guardarEditProducto() {
   const codigo = document.getElementById('edit-prod-codigo').value.trim();
   const nombre = document.getElementById('edit-prod-nombre').value.trim();
   if (!nombre || !codigo) { toast('Nombre y código son obligatorios.', 'error'); return; }
-  const duplicado = db.stock.find(p => p.codigo === codigo && p.id !== id);
-  if (duplicado) { toast('Ya existe otro producto con ese código.', 'error'); return; }
+  const talle = document.getElementById('edit-prod-talle').value.trim();
+  const duplicado = db.stock.find(p => p.codigo === codigo && p.talle === talle && p.id !== id);
+  if (duplicado) { toast('Ya existe otro producto con ese código y talle.', 'error'); return; }
   
   db.stock[idx] = {
     ...db.stock[idx],
     codigo,
     nombre,
-    talle: document.getElementById('edit-prod-talle').value.trim(),
+    talle,
     color: document.getElementById('edit-prod-color').value.trim(),
     precio: parseFloat(document.getElementById('edit-prod-precio').value) || 0,
     precioSugerido: parseFloat(document.getElementById('edit-prod-precio-sugerido').value) || 0,
