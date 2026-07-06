@@ -1488,7 +1488,7 @@ function renderDashboard() {
   document.getElementById('stat-balance-mes').textContent=fmtMoney(balance);
   document.getElementById('stat-balance-mes').style.color=balance>=0?'var(--mint-dark)':'var(--danger)';
   document.getElementById('stat-balance-sub').textContent=balance>=0?'Superávit del mes':'Déficit del mes';
-  const balanceGeneral = db.ingresos.filter(i=>i.acreditado).reduce((a,b)=>a+b.monto,0) - db.gastos.reduce((a,b)=>a+b.monto,0);
+  const balanceGeneral = db.ingresos.filter(i=>i.acreditado!==false).reduce((a,b)=>a+b.monto,0) - db.gastos.reduce((a,b)=>a+b.monto,0);
   const elBalGen = document.getElementById('stat-balance-general');
   if (elBalGen) { elBalGen.textContent = fmtMoney(balanceGeneral); elBalGen.style.color = balanceGeneral>=0?'var(--mint-dark)':'var(--danger)'; }
   const acreditaciones=obtenerAcreditaciones();
