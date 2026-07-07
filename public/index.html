@@ -1120,7 +1120,7 @@ async function guardarIngreso() {
     reg.productos = ventaProductosActual;
     // Descontar del stock al confirmar el ingreso
     ventaProductosActual.forEach(item => {
-      const p = db.stock.find(x => x.id == item.id) || db.stock.find(x => x.codigo === item.codigo);
+      const p = db.stock.find(x => x.id == item.id) || db.stock.find(x => x.codigo === item.codigo && x.color === item.color && x.talle === item.talle) || db.stock.find(x => x.codigo === item.codigo);
       if (p) p.cantidad = Math.max(0, p.cantidad - item.cantidad);
     });
     ventaProductosActual = [];
