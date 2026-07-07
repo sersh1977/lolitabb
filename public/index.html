@@ -2347,8 +2347,9 @@ async function guardarEditProducto() {
   const nombre = document.getElementById('edit-prod-nombre').value.trim();
   if (!nombre || !codigo) { toast('Nombre y código son obligatorios.', 'error'); return; }
   const talle = document.getElementById('edit-prod-talle').value.trim();
-  const duplicado = db.stock.find(p => p.codigo === codigo && p.talle === talle && p.id !== id);
-  if (duplicado) { toast('Ya existe otro producto con ese código y talle.', 'error'); return; }
+  const color = document.getElementById('edit-prod-color').value.trim();
+  const duplicado = db.stock.find(p => p.codigo === codigo && p.talle === talle && p.color === color && p.id !== id);
+  if (duplicado) { toast('Ya existe otro producto con ese código, talle y color.', 'error'); return; }
   
   db.stock[idx] = {
     ...db.stock[idx],
