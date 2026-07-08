@@ -1607,7 +1607,7 @@ function renderIngresos() {
     ? `<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:32px">Sin ingresos en este período</td></tr>`
     : items.map(r=>`<tr>
         <td>${fmtDate(r.fecha)}${r.hora?`<br><span style='font-size:11px;color:var(--text-soft)'>${r.hora}</span>`:''}</td>
-        <td style="font-size:11px;font-family:monospace;color:var(--text-soft)">${r.productos&&r.productos.length?r.productos.map(p=>`${p.codigo} ${p.color||''} ${p.talle||''} x${p.cantidad}`).join('<br>'):'<span style="color:var(--border)">—</span>'}</td>
+        <td style="font-size:11px;font-family:monospace;color:var(--text-soft)">${r.productos&&r.productos.length?r.productos.map(p=>`${p.codigo} ${p.color||''} ${p.talle||''}`).join('<br>'):'<span style="color:var(--border)">—</span>'}</td>
         <td>${r.concepto}${r.notas?`<br><span style="font-size:11px;color:var(--text-soft)">${r.notas}</span>`:''}</td>
         <td>${tipoTag(r.tipo,r.banco,r.modalidad)}</td>
         <td>${r.cuotas?`${r.cuotas}x cuotas`:'—'}</td>
@@ -1979,7 +1979,7 @@ function exportarExcelVentas() {
 
   const total = data.reduce((a,b) => a + b.monto, 0);
   const rows = data.map(r => `<tr>
-    <td>${r.fecha}</td><td>${r.concepto}</td><td>${r.tipo||''}</td>
+    <td>${r.fecha}</td><td>${r.productos&&r.productos.length?r.productos.map(p=>`${p.codigo} ${p.color||''} ${p.talle||''}`).join(' / '):''}</td><td>${r.concepto}</td><td>${r.tipo||''}</td>
     <td>${r.banco||''}</td><td>${r.modalidad||''}</td>
     <td>${r.cuotas||''}</td><td style="text-align:right">$${Number(r.monto).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
   </tr>`).join('');
@@ -1992,9 +1992,9 @@ function exportarExcelVentas() {
   </style></head><body>
     <h2>Ventas — ${desde} al ${hasta}</h2>
     <table>
-      <thead><tr><th>Fecha</th><th>Concepto</th><th>Tipo</th><th>Procesador</th><th>Modalidad</th><th>Cuotas</th><th>Monto</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Artculos</th><th>Concepto</th><th>Tipo</th><th>Procesador</th><th>Modalidad</th><th>Cuotas</th><th>Monto</th></tr></thead>
       <tbody>${rows}</tbody>
-      <tfoot><tr class="total"><td colspan="6" style="text-align:right">TOTAL</td><td style="text-align:right">$${total.toLocaleString('es-AR',{minimumFractionDigits:2})}</td></tr></tfoot>
+      <tfoot><tr class="total"><td colspan="7" style="text-align:right">TOTAL</td><td style="text-align:right">$${total.toLocaleString('es-AR',{minimumFractionDigits:2})}</td></tr></tfoot>
     </table>
     <p style="font-family:Arial;font-size:11px;color:#666">Generado el ${new Date().toLocaleDateString('es-AR')} — App LolitaBB</p>
   </body></html>`;
@@ -2023,9 +2023,9 @@ function exportarPDF(tipo) {
     titulo='Reporte de Ingresos'; filename='ingresos.pdf';
     const data=filtrarPorRango(db.ingresos,filters.ingresos);
     subtitulo=`Período: ${filters.ingresos}  ·  ${data.length} registro(s)`;
-    head=[['Fecha','Concepto','Forma de pago','Cuotas','Monto']];
-    body=[...data].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(r=>[fmtDate(r.fecha),r.concepto,tipoTagTexto(r.tipo,r.banco,r.modalidad),r.cuotas?r.cuotas+'x':'—',fmtMoney(r.monto)]);
-    foot=[['','','','TOTAL',fmtMoney(data.reduce((a,b)=>a+b.monto,0))]];
+head=[['Fecha','Artculos','Concepto','Forma de pago','Cuotas','Monto']];
+    body=[...data].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha)).map(r=>[fmtDate(r.fecha),r.productos&&r.productos.length?r.productos.map(p=>`${p.codigo} ${p.color||''} ${p.talle||''}`).join(' / '):'',r.concepto,tipoTagTexto(r.tipo,r.banco,r.modalidad),r.cuotas?r.cuotas+'x':'-',fmtMoney(r.monto)]);
+    foot=[['',' ','','','TOTAL',fmtMoney(data.reduce((a,b)=>a+b.monto,0))]];
   } else if (tipo==='gastos') {
     titulo='Reporte de Gastos'; filename='gastos.pdf';
     const data=filtrarPorRango(db.gastos,filters.gastos);
