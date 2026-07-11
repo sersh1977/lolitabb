@@ -2144,6 +2144,7 @@ async function iniciarApp() {
   if (!vGuardada) localStorage.setItem('cbk_app_version',APP_VERSION);
 
   await loadDB();
+  await migrarStockIdsUnicos();
   loadSession();
   if (session) initApp();
 
@@ -2158,6 +2159,45 @@ async function iniciarApp() {
   }
 }
 
+
+// ══════════════════════════════════════
+//  MIGRACIÓN: ids únicos de stock
+//  Corrige ids duplicados (mismo id para dos variantes
+//  distintas) reasignando _vN y fusionando combos repetidos.
+//  Es idempotente: si no hay duplicados, no hace nada.
+// ══════════════════════════════════════
+async function migrarStockIdsUnicos() {
+  if (!db.stock || !db.stock.length) return;
+  const combos = {};        // combo -> objeto conservado
+  const idCount = {};       // id original -> nº de apariciones
+  const salida = [];
+  let cambios = 0;
+  for (const p of db.stock) {
+    const combo = `${p.codigo}|${p.color}|${p.talle}`;
+    if (combos[combo]) {
+      const e = combos[combo];
+      if ((e.cantidad <= 0) && (p.cantidad > 0)) e.cantidad = p.cantidad;
+      else if (p.cantidad > e.cantidad) e.cantidad = p.cantidad;
+      if (!e.nombre && p.nombre) e.nombre = p.nombre;
+      cambios++; continue;
+    }
+    combos[combo] = p;
+    const oid = p.id;
+    if (idCount[oid]) {
+      idCount[oid]++;
+      p.id = `${oid}_v${idCount[oid]}`;
+      cambios++;
+    } else {
+      idCount[oid] = 1;
+    }
+    salida.push(p);
+  }
+  if (cambios > 0) {
+    db.stock = salida;
+    await saveDB();
+    console.log(`[migrarStockIdsUnicos] corregidos ${cambios} registros (ids duplicados).`);
+  }
+}
 
 // ══════════════════════════════════════
 //  STOCK
@@ -2413,8 +2453,12 @@ function buscarProductoVenta() {
   if (!q) { cont.style.display = 'none'; return; }
   
   const resultados = (db.stock || []).filter(p =>
-    p.cantidad > 0 && (p.codigo||'').toLowerCase().startsWith(q)
-  ).slice(0, 8);
+    p.cantidad > 0 &&
+    ((p.codigo||'').toLowerCase().startsWith(q) ||
+     (p.color||'').toLowerCase().includes(q) ||
+     (p.talle||'').toLowerCase().includes(q) ||
+     (p.nombre||'').toLowerCase().includes(q))
+  ).slice(0, 50);
 
   if (!resultados.length) {
     cont.innerHTML = '<div style="padding:12px;color:var(--text-soft);font-size:13px;text-align:center">Sin resultados</div>';
@@ -2706,7 +2750,7 @@ function buscarProductoCambio() {
       (p.talle||'').toLowerCase().includes(q) ||
       (p.color||'').toLowerCase().includes(q)
     )
-  ).slice(0, 8);
+  ).slice(0, 50);
   if (!resultados.length) {
     cont.innerHTML = '<div style="padding:8px;color:var(--text-soft);font-size:13px;text-align:center">Sin resultados</div>';
     cont.style.display = 'block'; return;
