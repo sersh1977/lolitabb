@@ -2732,7 +2732,7 @@ function renderDevTotal() {
     const cant = parseInt(document.getElementById('dev-cant-' + i)?.textContent) || 0;
     totalDev += cant * p.precio;
   });
-  const totalCambio = carritoCambio.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
+  const totalCambio = carritoCambio.reduce((s, item) => s + precioConDescuentoCambio(item) * item.cantidad, 0);
   document.getElementById('dev-total-devolver').textContent = fmtMoney(totalDev);
   document.getElementById('dev-total-cambio').textContent = fmtMoney(totalCambio);
   document.getElementById('dev-total-neto').textContent = fmtMoney(Math.max(0, totalDev - totalCambio));
@@ -2755,30 +2755,48 @@ function buscarProductoCambio() {
     cont.innerHTML = '<div style="padding:8px;color:var(--text-soft);font-size:13px;text-align:center">Sin resultados</div>';
     cont.style.display = 'block'; return;
   }
-  cont.innerHTML = resultados.map(p =>
-    `<div class="prod-result-item" onclick="agregarAlCarritoCambio('${p.id}')">
-      <div><strong>${esc(p.nombre)}</strong><span style="color:var(--text-soft);margin-left:8px">${esc(p.talle||'')} ${esc(p.color||'')}</span>
-      <br><code style="font-size:11px">${esc(p.codigo)}</code></div>
-      <div style="text-align:right"><div style="font-weight:500;color:var(--coffee)">${fmtMoney(p.precio||0)}</div>
-      <div style="font-size:11px;color:var(--text-soft)">Stock: ${p.cantidad}</div></div>
-    </div>`
-  ).join('');
+  const L = window._listaPorDefecto || 'precioTarjeta';
+  cont.innerHTML = resultados.map(p => {
+    const p3 = p.precioSugerido || 0, p4 = p.precioContado || 0, p5 = p.precioTarjeta || 0;
+    const sel = `onclick="event.stopPropagation();agregarAlCarritoCambio('${p.id}','precioSugerido')"`;
+    const sel2 = `onclick="event.stopPropagation();agregarAlCarritoCambio('${p.id}','precioContado')"`;
+    const sel3 = `onclick="event.stopPropagation();agregarAlCarritoCambio('${p.id}','precioTarjeta')"`;
+    return `<div class="prod-result-item" style="cursor:default">
+      <div style="flex:1"><strong>${esc(p.nombre)}</strong><span style="color:var(--text-soft);margin-left:8px">${esc(p.talle||'')} ${esc(p.color||'')}</span>
+      <br><code style="font-size:11px;color:var(--text-soft)">${esc(p.codigo)}</code> <span style="font-size:11px;color:var(--text-soft)">· Stock: ${p.cantidad}</span></div>
+      <div style="display:flex;gap:4px;align-items:center">
+        <button ${sel} class="btn-sm ${L==='precioSugerido'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L3 $${fmtMoney(p3)}</button>
+        <button ${sel2} class="btn-sm ${L==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L4 $${fmtMoney(p4)}</button>
+        <button ${sel3} class="btn-sm ${L==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L5 $${fmtMoney(p5)}</button>
+      </div>
+    </div>`;
+  }).join('');
   cont.style.display = 'block';
 }
 
-function agregarAlCarritoCambio(prodId) {
+function agregarAlCarritoCambio(prodId, lista) {
   const p = db.stock.find(x => x.id == prodId);
   if (!p) return;
-  const existente = carritoCambio.find(x => x.producto.id === prodId);
+  if (!lista) lista = window._listaPorDefecto || 'precioTarjeta';
+  window._listaPorDefecto = lista;
+  const precioUsado = p[lista] || p.precio || 0;
+  const existente = carritoCambio.find(x => x.producto.id === prodId && x.lista === lista);
   if (existente) {
     if (existente.cantidad >= p.cantidad) { toast(`Solo hay ${p.cantidad} en stock.`, 'error'); return; }
     existente.cantidad++;
   } else {
-    carritoCambio.push({ producto: p, cantidad: 1, precioUsado: p.precio || 0 });
+    carritoCambio.push({ producto: p, cantidad: 1, lista, precioUsado, descuentoTipo: 'porcentaje', descuentoValor: 0 });
   }
   document.getElementById('dev-buscar-cambio').value = '';
   document.getElementById('dev-resultados-cambio').style.display = 'none';
   renderCarritoCambio();
+}
+
+function precioConDescuentoCambio(item) {
+  const base = item.precioUsado || 0;
+  const val = parseFloat(item.descuentoValor) || 0;
+  if (item.descuentoTipo === 'monto') return Math.max(0, base - val);
+  return base * (1 - Math.min(100, Math.max(0, val)) / 100);
 }
 
 function renderCarritoCambio() {
@@ -2787,22 +2805,72 @@ function renderCarritoCambio() {
     cont.innerHTML = '<div style="color:var(--text-soft);font-size:13px;padding:8px;text-align:center">Sin productos de cambio</div>';
     renderDevTotal(); return;
   }
-  cont.innerHTML = carritoCambio.map((item, i) =>
-    `<div class="carrito-item">
-      <div class="carrito-item-info">
+  cont.innerHTML = carritoCambio.map((item, i) => {
+    const p3 = item.producto.precioSugerido || 0, p4 = item.producto.precioContado || 0, p5 = item.producto.precioTarjeta || 0;
+    const dtoPct = item.descuentoTipo === 'porcentaje';
+    const unitFinal = precioConDescuentoCambio(item);
+    const subTotal = unitFinal * item.cantidad;
+    return `<div class="carrito-item">
+      <div class="carrito-item-info" style="flex:1;min-width:0">
         <strong>${esc(item.producto.nombre)}</strong>
-        <span style="color:var(--text-soft);font-size:12px">${esc(item.producto.talle||'')} ${esc(item.producto.color||'')}</span>
-        <div style="font-size:12px;color:var(--coffee)">${fmtMoney(item.precioUsado)} c/u</div>
+        <span style="color:var(--text-soft);font-size:12px;margin-left:6px">${esc(item.producto.talle||'')} ${esc(item.producto.color||'')}</span>
+        <div style="display:flex;gap:4px;margin-top:4px">
+          <span class="btn-sm ${item.lista==='precioSugerido'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCambio(${i},'precioSugerido')">L3 $${fmtMoney(p3)}</span>
+          <span class="btn-sm ${item.lista==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCambio(${i},'precioContado')">L4 $${fmtMoney(p4)}</span>
+          <span class="btn-sm ${item.lista==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCambio(${i},'precioTarjeta')">L5 $${fmtMoney(p5)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
+          <span class="btn-sm ${item.descuentoTipo==='porcentaje'?'btn-primary':'btn-ghost'}" style="padding:1px 5px;font-size:10px;cursor:pointer;min-width:18px;text-align:center" onclick="cambiarTipoDescuentoCambio(${i})">%</span>
+          <span class="btn-sm ${item.descuentoTipo==='monto'?'btn-primary':'btn-ghost'}" style="padding:1px 5px;font-size:10px;cursor:pointer;min-width:18px;text-align:center" onclick="cambiarTipoDescuentoCambio(${i})">$</span>
+          <input type="number" class="dto-input" value="${item.descuentoValor}" min="0" max="${dtoPct?100:999999}" step="any"
+            onchange="cambiarDescuentoCambio(${i},this.value)"
+            style="width:52px;padding:2px 4px;font-size:11px;border:1px solid var(--border);border-radius:3px;text-align:center;background:var(--cream)">
+          <span style="font-size:11px;color:var(--text-soft)">→ <span class="money-val">${fmtMoney(unitFinal)}</span> /u</span>
+        </div>
       </div>
-      <div class="carrito-item-qty">
-        <button class="qty-btn" onclick="cambiarCantCambio(${i},-1)">−</button>
-        <span style="min-width:20px;text-align:center;font-weight:500">${item.cantidad}</span>
-        <button class="qty-btn" onclick="cambiarCantCambio(${i},1)">+</button>
-        <button class="qty-btn" style="color:var(--danger)" onclick="carritoCambio.splice(${i},1);renderCarritoCambio()">✕</button>
+      <div class="carrito-item-qty" style="align-items:flex-end">
+        <div style="display:flex;align-items:center;gap:2px">
+          <button class="qty-btn" onclick="cambiarCantCambio(${i},-1)">−</button>
+          <span style="min-width:20px;text-align:center;font-weight:500">${item.cantidad}</span>
+          <button class="qty-btn" onclick="cambiarCantCambio(${i},1)">+</button>
+          <button class="qty-btn" style="color:var(--danger);margin-left:4px" onclick="carritoCambio.splice(${i},1);renderCarritoCambio()">✕</button>
+        </div>
+        <div style="font-size:12px;font-weight:600;margin-top:4px;white-space:nowrap" class="money-val">${fmtMoney(subTotal)}</div>
       </div>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
   renderDevTotal();
+}
+
+function cambiarDescuentoCambio(i, val) {
+  const item = carritoCambio[i];
+  if (!item) return;
+  const n = parseFloat(val) || 0;
+  const max = item.descuentoTipo === 'porcentaje' ? 100 : (item.precioUsado || 0);
+  item.descuentoValor = Math.max(0, Math.min(max, n));
+  renderCarritoCambio();
+}
+
+function cambiarTipoDescuentoCambio(i) {
+  const item = carritoCambio[i];
+  if (!item) return;
+  item.descuentoTipo = item.descuentoTipo === 'porcentaje' ? 'monto' : 'porcentaje';
+  if (item.descuentoValor > 0) {
+    if (item.descuentoTipo === 'porcentaje') {
+      item.descuentoValor = Math.min(100, (item.descuentoValor / (item.precioUsado || 1)) * 100);
+    } else {
+      item.descuentoValor = Math.min(item.precioUsado || 0, (item.descuentoValor / 100) * (item.precioUsado || 0));
+    }
+  }
+  renderCarritoCambio();
+}
+
+function cambiarListaCambio(i, lista) {
+  const item = carritoCambio[i];
+  if (!item) return;
+  item.lista = lista;
+  item.precioUsado = item.producto[lista] || item.producto.precio || 0;
+  renderCarritoCambio();
 }
 
 function cambiarCantCambio(i, delta) {
@@ -2848,7 +2916,7 @@ async function confirmarDevolucion() {
       const prod = db.stock.find(x => x.id == item.producto.id);
       if (prod) prod.cantidad = Math.max(0, prod.cantidad - item.cantidad);
     });
-    totalCambio = carritoCambio.reduce((s, item) => s + (item.precioUsado || 0) * item.cantidad, 0);
+    totalCambio = carritoCambio.reduce((s, item) => s + precioConDescuentoCambio(item) * item.cantidad, 0);
   }
 
   const neto = Math.max(0, totalDevuelto - totalCambio);
