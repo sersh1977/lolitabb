@@ -261,7 +261,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <button class="nav-item" data-page="usuarios" onclick="goTo('usuarios')"><span class="nav-icon">👥</span> Usuarios</button>
         <button class="nav-item" data-page="auditoria" onclick="goTo('auditoria')"><span class="nav-icon">📝</span> Auditoría</button>
         <button class="nav-item" data-page="dbf" onclick="goTo('dbf')"><span class="nav-icon">☕</span> DBF Coffee</button>
-        <button class="nav-item" data-page="dbflolita" onclick="goTo('dbflolita')"><span class="nav-icon">🐻</span> DBF LolitaBB</button>
+        <button class="nav-item" data-page="dbflolita" onclick="goTo('dbflolita')"><span class="nav-icon">🐕</span> DBF LolitaBB</button>
       </div>
     </div>
     <div class="sidebar-footer">
@@ -483,7 +483,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div style="display:flex;gap:6px;flex-wrap:wrap" id="stock-prov-filters">
         <button class="filter-btn active" onclick="setFilterStockProv('todos',this)">Todas las DBs</button>
         <button class="filter-btn" onclick="setFilterStockProv('lince',this)">☕ Lince (Coffee)</button>
-        <button class="filter-btn" onclick="setFilterStockProv('lolitabb',this)">🐻 LolitaBB</button>
+        <button class="filter-btn" onclick="setFilterStockProv('lolitabb',this)">🐕 LolitaBB</button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;display:none" id="stock-cat-filters">
         <button class="filter-btn active" onclick="setFilterStockCat('todos',this)">Todas las categorías</button>
@@ -503,7 +503,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <input type="text" id="stock-buscar" placeholder="🔍 Buscar por código, nombre, color, talle..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderStock()" onkeydown="if(event.key==='Enter'){event.preventDefault();renderStock()}">
       <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Nuevo producto</button>
       <button class="btn btn-ghost" onclick="importarStockLince()" style="padding:8px 14px;font-size:12px">⬆ Importar Coffee</button>
-      <button class="btn btn-ghost" onclick="importarStockLolitabb()" style="padding:8px 14px;font-size:12px">🐻 Importar LolitaBB</button>
+      <button class="btn btn-ghost" onclick="importarStockLolitabb()" style="padding:8px 14px;font-size:12px">🐕 Importar LolitaBB</button>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
@@ -549,15 +549,16 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="page-content" id="page-dbflolita">
       <div class="card">
         <div class="card-header">
-          <h4>🐻 Productos DBF LolitaBB</h4>
+          <h4>🐕 Productos DBF LolitaBB</h4>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input type="text" id="dbfl-buscar" placeholder="🔍 Buscar por código o nombre..." style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderDBFLolita()">
             <span style="font-size:12px;color:var(--text-soft);align-self:center" id="dbfl-count"></span>
+            <button class="btn btn-ghost" id="btn-toggle-l3" onclick="toggleL3Lolitabb()" style="padding:6px 12px;font-size:13px">👁 L3</button>
             <button class="btn btn-primary" onclick="importarStockLolitabb()" style="padding:6px 14px;font-size:12px">⬆ Importar a stock</button>
           </div>
         </div>
         <div class="table-wrap"><table><thead><tr>
-          <th>Código</th><th>Nombre</th><th>Color</th><th>Talle</th><th>Cant</th><th>L3 (Costo)</th><th>L4 (Venta)</th><th>Categoría</th>
+          <th>Código</th><th>Nombre</th><th>Color</th><th>Talle</th><th>Cant</th><th id="th-l3-dbfl">L3 (Costo)</th><th>L4 (Venta)</th><th>Categoría</th>
         </tr></thead><tbody id="tabla-dbfl"></tbody></table></div>
       </div>
     </div>
@@ -1912,6 +1913,17 @@ async function renderDBF() {
 }
 
 let dbfLolitaData = [];
+let dbflMostrarL3 = false;
+let dbflL3Init = false;
+
+function toggleL3Lolitabb() {
+  dbflMostrarL3 = !dbflMostrarL3;
+  const btn = document.getElementById('btn-toggle-l3');
+  if (btn) btn.style.opacity = dbflMostrarL3 ? '1' : '0.4';
+  const th = document.getElementById('th-l3-dbfl');
+  if (th) th.style.opacity = dbflMostrarL3 ? '1' : '0';
+  renderDBFLolita();
+}
 
 async function renderDBFLolita() {
   if (!dbfLolitaData.length) {
@@ -1933,13 +1945,18 @@ async function renderDBFLolita() {
   const c = document.getElementById('dbfl-count'); if (c) c.textContent = filtered.length + ' productos';
   const el = document.getElementById('tabla-dbfl');
   if (!el) return;
+  if (!dbflL3Init) {
+    dbflL3Init = true;
+    const btn = document.getElementById('btn-toggle-l3');
+    if (btn) btn.style.opacity = '0.4';
+  }
   el.innerHTML = filtered.map(p => `<tr>
     <td><code>${esc(p.codigo||'')}</code></td>
     <td>${esc(p.nombre)}</td>
     <td>${esc(p.color||'')}</td>
     <td>${esc(p.talle||'')}</td>
     <td>${p.cantidad}</td>
-    <td>${fmtMoney(p.precioSugerido||0)}</td>
+    <td style="opacity:${dbflMostrarL3?'1':'0'}">${fmtMoney(p.precioSugerido||0)}</td>
     <td><strong>${fmtMoney(p.precioContado||0)}</strong></td>
     <td><span style="background:var(--cream-dark);color:var(--text-mid);padding:2px 8px;border-radius:10px;font-size:11px">${esc(p.categoria||'')}</span></td>
   </tr>`).join('');
