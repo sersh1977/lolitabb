@@ -504,6 +504,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Nuevo producto</button>
       <button class="btn btn-ghost" onclick="importarStockLince()" style="padding:8px 14px;font-size:12px">⬆ Importar Coffee</button>
       <button class="btn btn-ghost" onclick="importarStockLolitabb()" style="padding:8px 14px;font-size:12px">🐕 Importar LolitaBB</button>
+      <button class="btn btn-ghost" onclick="importarStockColegiales()" style="padding:8px 14px;font-size:12px">👔 Importar Colegiales</button>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
@@ -555,6 +556,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
             <span style="font-size:12px;color:var(--text-soft);align-self:center" id="dbfl-count"></span>
             <button class="btn btn-ghost" id="btn-toggle-l3" onclick="toggleL3Lolitabb()" style="padding:6px 12px;font-size:13px">👁 L3</button>
             <button class="btn btn-primary" onclick="importarStockLolitabb()" style="padding:6px 14px;font-size:12px">⬆ Importar a stock</button>
+            <button class="btn btn-ghost" onclick="importarStockColegiales()" style="padding:6px 14px;font-size:12px">👔 Importar Colegiales</button>
           </div>
         </div>
         <div class="table-wrap"><table><thead><tr>
@@ -2623,6 +2625,29 @@ async function importarStockLolitabb() {
     try { dbfLolitaData = []; } catch(e) {}
     renderStock();
     toast(`✓ Stock LolitaBB reemplazado: ${db.stockLolitabb.length} registros, ${unids} unidades`, 'success');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function importarStockColegiales() {
+  if (!confirm(`¿Agregar items COLEGIALES al stock LolitaBB? Los items existentes (Flores) no se tocan.`)) return;
+  try {
+    const r = await fetch('stock-colegiales.json?_=' + Date.now());
+    if (!r.ok) { toast('Error: no se encontró stock-colegiales.json', 'error'); return; }
+    const data = await r.json();
+    let agregados = 0;
+    data.forEach(p => {
+      p.proveedor = 'lolitabb';
+      if (!db.stockLolitabb.some(x => x.codigo === p.codigo && x.color === p.color && x.talle === p.talle)) {
+        db.stockLolitabb.push(p);
+        agregados++;
+      }
+    });
+    recalcularStockUnion();
+    await saveDB();
+    logAudit('STOCK_IMPORT_COLEGIALES', `Agregados ${agregados} items colegiales a LolitaBB`);
+    try { dbfLolitaData = []; } catch(e) {}
+    renderStock();
+    toast(`✓ ${agregados} items colegiales agregados a LolitaBB`, 'success');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
