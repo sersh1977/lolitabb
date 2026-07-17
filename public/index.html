@@ -1929,10 +1929,12 @@ function toggleL3Lolitabb() {
 
 async function renderDBFLolita() {
   if (!dbfLolitaData.length) {
-    try {
-      const r = await fetch('stock-lolitabb.json?_=' + Date.now());
-      if (r.ok) dbfLolitaData = await r.json();
-    } catch(e) {}
+    const promises = [
+      fetch('stock-lolitabb.json?_=' + Date.now()).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch('stock-colegiales.json?_=' + Date.now()).then(r => r.ok ? r.json() : []).catch(() => [])
+    ];
+    const [flores, colegiales] = await Promise.all(promises);
+    dbfLolitaData = [...flores, ...colegiales];
   }
   if (!dbfLolitaData.length) {
     const el = document.getElementById('tabla-dbfl');
@@ -2645,7 +2647,8 @@ async function importarStockColegiales() {
     recalcularStockUnion();
     await saveDB();
     logAudit('STOCK_IMPORT_COLEGIALES', `Agregados ${agregados} items colegiales a LolitaBB`);
-    try { dbfLolitaData = []; } catch(e) {}
+    dbfLolitaData = [];
+    renderDBFLolita();
     renderStock();
     toast(`✓ ${agregados} items colegiales agregados a LolitaBB`, 'success');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
