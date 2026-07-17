@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -260,7 +260,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <button class="nav-item" data-page="config-pagos" onclick="goTo('config-pagos')"><span class="nav-icon">⚙️</span> Medios de pago</button>
         <button class="nav-item" data-page="usuarios" onclick="goTo('usuarios')"><span class="nav-icon">👥</span> Usuarios</button>
         <button class="nav-item" data-page="auditoria" onclick="goTo('auditoria')"><span class="nav-icon">📝</span> Auditoría</button>
-        <button class="nav-item" data-page="dbf" onclick="goTo('dbf')"><span class="nav-icon">🗄️</span> DBF Original</button>
+        <button class="nav-item" data-page="dbf" onclick="goTo('dbf')"><span class="nav-icon">☕</span> DBF Coffee</button>
+        <button class="nav-item" data-page="dbflolita" onclick="goTo('dbflolita')"><span class="nav-icon">🐻</span> DBF LolitaBB</button>
       </div>
     </div>
     <div class="sidebar-footer">
@@ -478,14 +479,31 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <!-- STOCK -->
     <div class="page-content" id="page-stock">
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="filter-btn active" onclick="setFilterStock('todos',this)">Todos</button>
-      <button class="filter-btn" onclick="setFilterStock('sin-stock',this)">Sin stock</button>
-      <button class="filter-btn" onclick="setFilterStock('bajo-stock',this)">Stock bajo</button>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;flex-direction:column">
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="stock-prov-filters">
+        <button class="filter-btn active" onclick="setFilterStockProv('todos',this)">Todas las DBs</button>
+        <button class="filter-btn" onclick="setFilterStockProv('lince',this)">☕ Lince (Coffee)</button>
+        <button class="filter-btn" onclick="setFilterStockProv('lolitabb',this)">🐻 LolitaBB</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;display:none" id="stock-cat-filters">
+        <button class="filter-btn active" onclick="setFilterStockCat('todos',this)">Todas las categorías</button>
+        <button class="filter-btn" onclick="setFilterStockCat('Baby',this)">Baby</button>
+        <button class="filter-btn" onclick="setFilterStockCat('Mini',this)">Mini</button>
+        <button class="filter-btn" onclick="setFilterStockCat('Kids',this)">Kids</button>
+        <button class="filter-btn" onclick="setFilterStockCat('Shura',this)">Shura</button>
+        <button class="filter-btn" onclick="setFilterStockCat('Camperas',this)">Camperas</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="stock-status-filters">
+        <button class="filter-btn active" onclick="setFilterStock('todos',this)">Todos</button>
+        <button class="filter-btn" onclick="setFilterStock('sin-stock',this)">Sin stock</button>
+        <button class="filter-btn" onclick="setFilterStock('bajo-stock',this)">Stock bajo</button>
+      </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input type="text" id="stock-buscar" placeholder="🔍 Buscar por código, nombre, color, talle..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderStock()" onkeydown="if(event.key==='Enter'){event.preventDefault();renderStock()}">
       <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Nuevo producto</button>
+      <button class="btn btn-ghost" onclick="importarStockLince()" style="padding:8px 14px;font-size:12px">⬆ Importar Coffee</button>
+      <button class="btn btn-ghost" onclick="importarStockLolitabb()" style="padding:8px 14px;font-size:12px">🐻 Importar LolitaBB</button>
     </div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
@@ -515,7 +533,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div class="page-content" id="page-dbf">
       <div class="card">
         <div class="card-header">
-          <h4>🗄️ Productos DBF Original</h4>
+          <h4>☕ Productos DBF Coffee</h4>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input type="text" id="dbf-buscar" placeholder="🔍 Buscar por código o nombre..." style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderDBF()">
             <span style="font-size:12px;color:var(--text-soft);align-self:center" id="dbf-count"></span>
@@ -530,6 +548,22 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
   </div>
 </div>
 
+    <!-- DBF LOLITABB -->
+    <div class="page-content" id="page-dbflolita">
+      <div class="card">
+        <div class="card-header">
+          <h4>🐻 Productos DBF LolitaBB</h4>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="dbfl-buscar" placeholder="🔍 Buscar por código o nombre..." style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderDBFLolita()">
+            <span style="font-size:12px;color:var(--text-soft);align-self:center" id="dbfl-count"></span>
+            <button class="btn btn-primary" onclick="importarStockLolitabb()" style="padding:6px 14px;font-size:12px">⬆ Importar a stock</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Código</th><th>Nombre</th><th>Color</th><th>Talle</th><th>Cant</th><th>L3 (Costo)</th><th>L4 (Venta)</th><th>Categoría</th>
+        </tr></thead><tbody id="tabla-dbfl"></tbody></table></div>
+      </div>
+    </div>
 <!-- MODAL INGRESO -->
 <div class="modal-overlay" id="modal-ingreso">
   <div class="modal">
@@ -766,7 +800,7 @@ async function loadDB() {
     if (!db.auditLog) db.auditLog = [];
     // Guardar en localStorage sin stock (puede ser muy grande)
     try {
-      const dbParaCache = {...db, stock: []};
+      const dbParaCache = {...db, stock: [], stockLince: [], stockLolitabb: []};
       localStorage.setItem('cbk_db', JSON.stringify(dbParaCache));
     } catch(e) {}
   } else {
@@ -776,7 +810,8 @@ async function loadDB() {
 
   if (!db.auditLog) db.auditLog = [];
   if (!db.ingresos) db.ingresos = [];
-  if (!db.stock) db.stock = [];
+  if (!Array.isArray(db.stockLince)) db.stockLince = [];
+  if (!Array.isArray(db.stockLolitabb)) db.stockLolitabb = [];
   if (!db.gastos) db.gastos = [];
   if (!db.configPagos || Object.keys(db.configPagos).length === 0)
     db.configPagos = JSON.parse(JSON.stringify(DEFAULT_CONFIG_PAGOS));
@@ -792,7 +827,7 @@ async function loadDB() {
 
 async function saveDB() {
   try {
-    const dbCache = {...db, stock: []};
+    const dbCache = {...db, stock: [], stockLince: [], stockLolitabb: []};
     localStorage.setItem('cbk_db', JSON.stringify(dbCache));
   } catch(e) {}
   if (!API_TOKEN) return;
@@ -877,11 +912,11 @@ function initApp() {
 const PAGE_TITLES = {
   dashboard:'Dashboard', ingresos:'Ingresos', gastos:'Gastos',
   stock:'Stock', reportes:'Reportes', acreditaciones:'Acreditaciones',
-  'config-pagos':'Medios de pago', usuarios:'Usuarios', auditoria:'Auditoría', dbf:'DBF Original'
+  'config-pagos':'Medios de pago', usuarios:'Usuarios', auditoria:'Auditoría', dbf:'DBF Coffee', dbflolita:'DBF LolitaBB'
 };
 
 function goTo(page) {
-  if ((page==='usuarios'||page==='config-pagos'||page==='auditoria'||page==='dbf') && session.rol!=='admin') return;
+  if ((page==='usuarios'||page==='config-pagos'||page==='auditoria'||page==='dbf'||page==='dbflolita') && session.rol!=='admin') return;
   document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const pageEl = document.getElementById('page-'+page);
@@ -904,6 +939,7 @@ function renderPage(page) {
   else if (page==='usuarios') renderUsuarios();
   else if (page==='auditoria') renderAuditoria();
   else if (page==='dbf') renderDBF();
+  else if (page==='dbflolita') renderDBFLolita();
 }
 
 // ══════════════════════════════════════
@@ -920,7 +956,7 @@ function openModal(id) {
 }
 
 function ajusteStock(id) {
-  const p = db.stock.find(x => x.id == id);
+  const p = encontrarItem(id);
   if (!p) { console.error('Producto no encontrado con id:', id); return; }
   document.getElementById('ajuste-prod-id').value = id;
   document.getElementById('ajuste-prod-info').innerHTML =
@@ -932,7 +968,7 @@ function ajusteStock(id) {
 }
 
 function abrirDevolucionStock(prodId) {
-  const p = db.stock.find(x => x.id == prodId);
+  const p = encontrarItem(prodId);
   if (!p) return;
   document.getElementById('dev-stock-prod-id').value = prodId;
   document.getElementById('dev-stock-prod-info').innerHTML =
@@ -1120,7 +1156,7 @@ async function guardarIngreso() {
     reg.productos = ventaProductosActual;
     // Descontar del stock al confirmar el ingreso
     ventaProductosActual.forEach(item => {
-      const p = db.stock.find(x => x.id == item.id) || db.stock.find(x => x.codigo === item.codigo && x.color === item.color && x.talle === item.talle) || db.stock.find(x => x.codigo === item.codigo);
+      const p = encontrarItem(item.id) || (function(){ const m = todoStock().find(x => x.codigo === item.codigo && x.color === item.color && x.talle === item.talle) || todoStock().find(x => x.codigo === item.codigo); return m; })();
       if (p) p.cantidad = Math.max(0, p.cantidad - item.cantidad);
     });
     ventaProductosActual = [];
@@ -1873,16 +1909,49 @@ async function renderDBF() {
   }).join('');
 }
 
+let dbfLolitaData = [];
+
+async function renderDBFLolita() {
+  if (!dbfLolitaData.length) {
+    try {
+      const r = await fetch('stock-lolitabb.json?_=' + Date.now());
+      if (r.ok) dbfLolitaData = await r.json();
+    } catch(e) {}
+  }
+  if (!dbfLolitaData.length) {
+    const el = document.getElementById('tabla-dbfl');
+    if (el) el.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text-soft)">Sin datos LolitaBB. Generá stock-lolitabb.json.</td></tr>';
+    const c = document.getElementById('dbfl-count'); if (c) c.textContent = '0 productos';
+    return;
+  }
+  const q = (document.getElementById('dbfl-buscar')?.value || '').toLowerCase().trim();
+  const filtered = q ? dbfLolitaData.filter(p =>
+    (p.codigo||'').toLowerCase().includes(q) || (p.nombre||'').toLowerCase().includes(q) || (p.color||'').toLowerCase().includes(q)
+  ) : dbfLolitaData;
+  const c = document.getElementById('dbfl-count'); if (c) c.textContent = filtered.length + ' productos';
+  const el = document.getElementById('tabla-dbfl');
+  if (!el) return;
+  el.innerHTML = filtered.map(p => \<tr>
+    <td><code>\</code></td>
+    <td>\</td>
+    <td>\</td>
+    <td>\</td>
+    <td>\</td>
+    <td>\</td>
+    <td><strong>\</strong></td>
+    <td><span style="background:var(--cream-dark);color:var(--text-mid);padding:2px 8px;border-radius:10px;font-size:11px">\</span></td>
+  </tr>\).join('');
+}
 async function importarDBFaStock() {
   if (!dbfData.length) { toast('Primero cargá la página DBF.', 'error'); return; }
   const mapaDBF = {};
   dbfData.forEach(p => { mapaDBF[p.codigo] = p; });
   const codigosDBF = new Set(dbfData.map(p => p.codigo));
-  const conservados = db.stock.filter(p => !codigosDBF.has(p.codigo));
+  const conservados = (db.stockLince||[]).filter(p => !codigosDBF.has(p.codigo));
   const actualizados = [];
   const agregados = [];
   const mapaExistente = {};
-  db.stock.forEach(p => {
+  (db.stockLince||[]).forEach(p => {
     if (codigosDBF.has(p.codigo)) {
       if (!mapaExistente[p.codigo]) mapaExistente[p.codigo] = [];
       mapaExistente[p.codigo].push(p);
@@ -1917,18 +1986,19 @@ async function importarDBFaStock() {
         precioSugerido: d.APR4 || 0,
         precioContado: d.APR5 || 0,
         precioTarjeta: d.APR6 || 0,
+        proveedor: 'lince',
         notas: 'Importado desde DBF Lince',
         creadoEn: new Date().toISOString()
       });
     }
   }
-  const totalAntes = db.stock.length;
-  db.stock = [...conservados, ...actualizados, ...agregados];
-  const totalUnidades = db.stock.reduce((s,x)=>s+(x.cantidad||0),0);
+  const totalAntes = (db.stockLince||[]).length;
+  db.stockLince = [...conservados, ...actualizados, ...agregados]; recalcularStockUnion();
+  const totalUnidades = db.stockLince.reduce((s,x)=>s+(x.cantidad||0),0);
   await saveDB();
   logAudit('STOCK_IMPORT_DBF', `Fusionados: ${conservados.length} conservados, ${actualizados.length} actualizados, ${agregados.length} agregados (${totalUnidades} unidades)`);
   renderStock();
-  toast(`✓ Stock fusionado: ${db.stock.length} productos, ${totalUnidades} unidades`, 'success');
+  toast(`✓ Stock Lince fusionado: ${db.stockLince.length} productos, ${totalUnidades} unidades`, 'success');
 }
 
 // ══════════════════════════════════════
@@ -2144,7 +2214,7 @@ async function iniciarApp() {
   if (!vGuardada) localStorage.setItem('cbk_app_version',APP_VERSION);
 
   await loadDB();
-  await migrarStockIdsUnicos();
+  await migrarDosDBs();
   loadSession();
   if (session) initApp();
 
@@ -2166,38 +2236,68 @@ async function iniciarApp() {
 //  distintas) reasignando _vN y fusionando combos repetidos.
 //  Es idempotente: si no hay duplicados, no hace nada.
 // ══════════════════════════════════════
-async function migrarStockIdsUnicos() {
-  if (!db.stock || !db.stock.length) return;
-  const combos = {};        // combo -> objeto conservado
-  const idCount = {};       // id original -> nº de apariciones
-  const salida = [];
-  let cambios = 0;
-  for (const p of db.stock) {
-    const combo = `${p.codigo}|${p.color}|${p.talle}`;
-    if (combos[combo]) {
-      const e = combos[combo];
-      if ((e.cantidad <= 0) && (p.cantidad > 0)) e.cantidad = p.cantidad;
-      else if (p.cantidad > e.cantidad) e.cantidad = p.cantidad;
-      if (!e.nombre && p.nombre) e.nombre = p.nombre;
-      cambios++; continue;
-    }
-    combos[combo] = p;
-    const oid = p.id;
-    if (idCount[oid]) {
-      idCount[oid]++;
-      p.id = `${oid}_v${idCount[oid]}`;
-      cambios++;
-    } else {
-      idCount[oid] = 1;
-    }
-    salida.push(p);
-  }
-  if (cambios > 0) {
-    db.stock = salida;
-    await saveDB();
-    console.log(`[migrarStockIdsUnicos] corregidos ${cambios} registros (ids duplicados).`);
-  }
+// =====================================================================
+//  HELPERS stock dual (Lince + LolitaBB)
+// =====================================================================
+function todoStock() {
+  return [...(db.stockLince||[]), ...(db.stockLolitabb||[])];
 }
+function encontrarItem(id) {
+  if (id === undefined || id === null) return null;
+  const k = String(id);
+  const a = db.stockLince || [], b = db.stockLolitabb || [];
+  return a.find(x => String(x.id) === k) || b.find(x => String(x.id) === k) || null;
+}
+function recalcularStockUnion() {
+  db.stock = [...(db.stockLince||[]), ...(db.stockLolitabb||[])];
+}
+function obtenerListaPreciosItem(p) {
+  return (p.precioTarjeta && p.precioTarjeta > 0) ? 3 : 2;
+}
+
+// =====================================================================
+//  MIGRACION a dos DBs + ids unicos
+// =====================================================================
+async function migrarDosDBs() {
+  if (!Array.isArray(db.stockLince)) db.stockLince = [];
+  if (!Array.isArray(db.stockLolitabb)) db.stockLolitabb = [];
+  if (Array.isArray(db.stock) && db.stock.length) {
+    for (const p of db.stock) {
+      const esLolitabb = (typeof p.id === 'string' && p.id.startsWith('lolitabb_')) || p.proveedor === 'lolitabb';
+      if (esLolitabb) {
+        p.proveedor = 'lolitabb';
+        if (!db.stockLolitabb.some(x => String(x.id) === String(p.id))) db.stockLolitabb.push(p);
+      } else {
+        if (!p.proveedor) p.proveedor = 'lince';
+        if (!db.stockLince.some(x => String(x.id) === String(p.id))) db.stockLince.push(p);
+      }
+    }
+    db.stock = [];
+    await saveDB();
+  }
+  let cambios = 0;
+  for (const arrRef of [db.stockLince, db.stockLolitabb]) {
+    if (!arrRef || !arrRef.length) continue;
+    const combos = {}, idCount = {}, salida = [];
+    for (const p of arrRef) {
+      const combo = String(p.codigo) + '|' + p.color + '|' + p.talle;
+      if (combos[combo]) {
+        const e = combos[combo];
+        if ((e.cantidad <= 0) && (p.cantidad > 0)) e.cantidad = p.cantidad;
+        else if (p.cantidad > e.cantidad) e.cantidad = p.cantidad;
+        if (!e.nombre && p.nombre) e.nombre = p.nombre;
+        cambios++; continue;
+      }
+      combos[combo] = p;
+      if (idCount[p.id]) { idCount[p.id]++; p.id = p.id + '_v' + idCount[p.id]; cambios++; }
+      else idCount[p.id] = 1;
+      salida.push(p);
+    }
+    if (arrRef === db.stockLince) db.stockLince = salida; else db.stockLolitabb = salida;
+  }
+  recalcularStockUnion();
+  if (cambios > 0) { await saveDB(); console.log('[migrarDosDBs] corregidos ' + cambios + ' registros.'); } else { recalcularStockUnion(); }
+}}
 
 // ══════════════════════════════════════
 //  STOCK
@@ -2208,10 +2308,30 @@ let carritoCambio = [];
 let ventaProductosActual = [];
 let devolucionIngresoOrigen = null;
 
+let filterStockProv = 'todos';
+let filterStockCat  = 'todos';
+function setFilterStockProv(p, btn) {
+  filterStockProv = p;
+  paginaStock = 1;
+  document.querySelectorAll('#stock-prov-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const cat = document.getElementById('stock-cat-filters');
+  if (cat) cat.style.display = (p === 'lolitabb') ? 'flex' : 'none';
+  if (p !== 'lolitabb') filterStockCat = 'todos';
+  renderStock();
+}
+function setFilterStockCat(c, btn) {
+  filterStockCat = c;
+  paginaStock = 1;
+  document.querySelectorAll('#stock-cat-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderStock();
+}
+
 function setFilterStock(f, btn) {
   filterStock = f;
   paginaStock = 1;
-  document.querySelectorAll('#page-stock .filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#stock-status-filters .filter-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderStock();
 }
@@ -2222,18 +2342,22 @@ let stockSortCol = 'codigo';
 let stockSortDir = 'asc';
 
 function renderStock() {
-  if (!db.stock) db.stock = [];
+  if (!Array.isArray(db.stock) || !db.stock.length) recalcularStockUnion();
   const buscar = (document.getElementById('stock-buscar')?.value || '').toLowerCase();
-  
+
   let items = db.stock;
+  if (filterStockProv === 'lince')      items = items.filter(p => (p.proveedor||'lince') === 'lince');
+  else if (filterStockProv === 'lolitabb') items = items.filter(p => p.proveedor === 'lolitabb');
+  if (filterStockProv === 'lolitabb' && filterStockCat !== 'todos') {
+    items = items.filter(p => (p.categoria||'') === filterStockCat);
+  }
   if (filterStock === 'sin-stock') items = items.filter(p => p.cantidad <= 0);
   else if (filterStock === 'bajo-stock') items = items.filter(p => p.cantidad > 0 && p.cantidad <= 3);
   if (buscar) {
     items = items.filter(p => (p.codigo||'').toLowerCase().includes(buscar) || (p.nombre||'').toLowerCase().includes(buscar) || (p.color||'').toLowerCase().includes(buscar) || (p.talle||'').toLowerCase().includes(buscar));
-    paginaStock = 1; // reset page on search
+    paginaStock = 1;
   }
 
-  // Sort
   items.sort((a, b) => {
     let va = (a[stockSortCol]||''), vb = (b[stockSortCol]||'');
     if (stockSortCol === 'precio' || stockSortCol === 'cantidad') { va = parseFloat(va)||0; vb = parseFloat(vb)||0; }
@@ -2243,11 +2367,13 @@ function renderStock() {
     return 0;
   });
 
-  // Stats (always from full stock)
-  const total = db.stock.length;
-  const bajo = db.stock.filter(p => p.cantidad > 0 && p.cantidad <= 3).length;
-  const sin = db.stock.filter(p => p.cantidad <= 0).length;
-  const valor = db.stock.reduce((s, p) => s + (p.apr2 || p.precio || 0) * (p.cantidad || 0), 0);
+  const baseStats = (filterStockProv === 'todos') ? db.stock
+    : (filterStockProv === 'lince') ? db.stock.filter(p=>(p.proveedor||'lince')==='lince')
+    : db.stock.filter(p=>p.proveedor==='lolitabb');
+  const total = baseStats.length;
+  const bajo = baseStats.filter(p => p.cantidad > 0 && p.cantidad <= 3).length;
+  const sin = baseStats.filter(p => p.cantidad <= 0).length;
+  const valor = baseStats.reduce((s, p) => s + (p.apr2 || p.precio || 0) * (p.cantidad || 0), 0);
   const stTotal = document.getElementById('st-total');
   const stBajo = document.getElementById('st-bajo');
   const stSin = document.getElementById('st-sin');
@@ -2257,22 +2383,20 @@ function renderStock() {
   if (stSin) stSin.textContent = sin;
   if (stValor) stValor.textContent = fmtMoney(valor);
 
-  // Sort arrows
   document.querySelectorAll('#page-stock .sort-arrow').forEach(el => el.textContent = '');
   const arrowEl = document.getElementById('sort-' + stockSortCol);
-  if (arrowEl) arrowEl.textContent = stockSortDir === 'asc' ? ' ▲' : ' ▼';
+  if (arrowEl) arrowEl.textContent = stockSortDir === 'asc' ? ' ^' : ' v';
 
   const tbody = document.getElementById('tabla-stock');
   if (!tbody) return;
-  
+
   if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-soft)">No se encontraron productos.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-soft)">No se encontraron productos.</td></tr>';
     const pg = document.getElementById('stock-paginacion');
     if (pg) pg.innerHTML = '';
     return;
   }
 
-  // Pagination
   const totalPags = Math.ceil(items.length / STOCK_POR_PAGINA);
   if (paginaStock > totalPags) paginaStock = totalPags;
   const desde = (paginaStock - 1) * STOCK_POR_PAGINA;
@@ -2281,35 +2405,30 @@ function renderStock() {
   tbody.innerHTML = pagItems.map(p => {
     const stockClass = p.cantidad <= 0 ? 'stock-sin' : p.cantidad <= 3 ? 'stock-bajo' : 'stock-ok';
     const stockLabel = p.cantidad <= 0 ? 'Sin stock' : p.cantidad <= 3 ? 'Stock bajo' : 'En stock';
-    return `<tr>
-      <td><code style="font-size:12px;background:var(--cream-dark);padding:2px 6px;border-radius:4px">${esc(p.codigo||'—')}</code></td>
-      <td><strong>${esc(p.nombre)}</strong>${p.notas?`<br><span style="font-size:11px;color:var(--text-soft)">${esc(p.notas)}</span>`:''}</td>
-      <td>${esc(p.talle||'—')}</td>
-      <td>${esc(p.color||'—')}</td>
-      <td style="font-weight:500">${fmtMoney(p.precio||0)}</td>
-      <td><span class="stock-badge ${stockClass}">${p.cantidad} — ${stockLabel}</span></td>
-      <td>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px" data-action="editar" data-id="${p.id}" onclick="editarProducto(this.dataset.id)">✏</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="${p.id}" onclick="ajusteStock(this.dataset.id)">±</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#b8860b" data-action="devolucion" data-id="${p.id}" title="Devolución rápida" onclick="abrirDevolucionStock(this.dataset.id)">↩</button>
-        <button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:var(--danger)" data-action="eliminar" data-id="${p.id}" onclick="eliminarProducto(this.dataset.id)">🗑</button>
-      </td>
-    </tr>`;
+    const provBadge = (p.proveedor === 'lolitabb')
+      ? '<span style="background:#FFE0B2;color:#8B4A00;padding:1px 6px;border-radius:8px;font-size:10px">LolitaBB</span>'
+      : '<span style="background:var(--cream-dark);color:var(--text-mid);padding:1px 6px;border-radius:8px;font-size:10px">Coffee</span>';
+    const catBadge = (p.proveedor === 'lolitabb' && p.categoria) ? ' <span style="background:var(--cream-dark);color:var(--text-soft);padding:1px 6px;border-radius:8px;font-size:10px">' + esc(p.categoria) + '</span>' : '';
+    return '<tr>' +
+      '<td><code style="font-size:12px;background:var(--cream-dark);padding:2px 6px;border-radius:4px">' + esc(p.codigo||'-') + '</code></td>' +
+      '<td><div style="display:flex;gap:4px;margin-bottom:3px">' + provBadge + catBadge + '</div><strong>' + esc(p.nombre) + '</strong>' + (p.notas ? '<br><span style="font-size:11px;color:var(--text-soft)">' + esc(p.notas) + '</span>' : '') + '</td>' +
+      '<td>' + esc(p.talle||'-') + '</td>' +
+      '<td>' + esc(p.color||'-') + '</td>' +
+      '<td style="font-weight:500">' + fmtMoney(p.precio||0) + '</td>' +
+      '<td><span class="stock-badge ' + stockClass + '">' + p.cantidad + ' - ' + stockLabel + '</span></td>' +
+      '<td>' +
+        '<button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px" data-action="editar" data-id="' + p.id + '" onclick="editarProducto(this.dataset.id)">EDIT</button>' +
+        '<button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#2e7d32" data-action="ajuste" data-id="' + p.id + '" onclick="ajusteStock(this.dataset.id)">AJUST</button>' +
+        '<button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:#b8860b" data-action="devolucion" data-id="' + p.id + '" title="Devolucion rapida" onclick="abrirDevolucionStock(this.dataset.id)">DEV</button>' +
+        '<button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px;color:var(--danger)" data-action="eliminar" data-id="' + p.id + '" onclick="eliminarProducto(this.dataset.id)">DEL</button>' +
+      '</td>' +
+    '</tr>';
   }).join('');
 
-  // Pagination controls
   const pg = document.getElementById('stock-paginacion');
   if (pg) {
-    const mostrando = `${desde+1}–${Math.min(desde+STOCK_POR_PAGINA, items.length)} de ${items.length}`;
-    pg.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;color:var(--text-mid)">
-        <span>${mostrando}</span>
-        <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost" style="padding:4px 12px" onclick="cambiarPaginaStock(-1)" ${paginaStock<=1?'disabled':''}>← Ant</button>
-          <span style="padding:4px 10px;background:var(--cream-dark);border-radius:var(--radius-sm)">${paginaStock}/${totalPags}</span>
-          <button class="btn btn-ghost" style="padding:4px 12px" onclick="cambiarPaginaStock(1)" ${paginaStock>=totalPags?'disabled':''}>Sig →</button>
-        </div>
-      </div>`;
+    const mostrando = (desde+1) + '-' + Math.min(desde+STOCK_POR_PAGINA, items.length) + ' de ' + items.length;
+    pg.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;color:var(--text-mid)"><span>' + mostrando + '</span><div style="display:flex;gap:6px"><button class="btn btn-ghost" style="padding:4px 12px" onclick="cambiarPaginaStock(-1)" ' + (paginaStock<=1?'disabled':'') + '>Ant</button><span style="padding:4px 10px;background:var(--cream-dark);border-radius:var(--radius-sm)">' + paginaStock + '/' + totalPags + '</span><button class="btn btn-ghost" style="padding:4px 12px" onclick="cambiarPaginaStock(1)" ' + (paginaStock>=totalPags?'disabled':'') + '>Sig</button></div></div>';
   }
   setTimeout(() => document.getElementById('stock-buscar')?.focus(), 100);
 }
@@ -2328,6 +2447,9 @@ function cambiarPaginaStock(delta) {
   document.getElementById('page-stock')?.scrollTo(0,0);
 }
 
+function toggleProdCategoria(v){ const w=document.getElementById('prod-categoria-wrap'); if(w) w.style.display = (v==='lolitabb')?'block':'none'; }
+function toggleEditProdCategoria(v){ const w=document.getElementById('edit-prod-categoria-wrap'); if(w) w.style.display = (v==='lolitabb')?'block':'none'; }
+
 async function guardarProducto() {
   const codigo = document.getElementById('prod-codigo').value.trim();
   const nombre = document.getElementById('prod-nombre').value.trim();
@@ -2336,21 +2458,25 @@ async function guardarProducto() {
   const precio = parseFloat(document.getElementById('prod-precio').value) || 0;
   const cantidad = parseInt(document.getElementById('prod-cantidad').value) || 0;
   const notas = document.getElementById('prod-notas').value.trim();
+  const proveedor = (document.getElementById('prod-proveedor')?.value || 'lince');
+  const categoria = (document.getElementById('prod-categoria')?.value || '');
 
   if (!nombre) { toast('El nombre es obligatorio.', 'error'); return; }
   if (!codigo) { toast('El código es obligatorio.', 'error'); return; }
-  if (db.stock.some(p => p.codigo === codigo)) { toast('Ya existe un producto con ese código.', 'error'); return; }
+  const arrDest = (proveedor === 'lolitabb') ? db.stockLolitabb : db.stockLince;
+  if (arrDest.some(p => p.codigo === codigo && p.talle === talle && p.color === color)) { toast('Ya existe ese producto (código+talle+color) en ' + (proveedor==='lolitabb'?'LolitaBB':'Coffee') + '.', 'error'); return; }
 
   const prod = {
-    id: 'p' + Date.now(), codigo, nombre, talle, color, precio, cantidad, notas,
+    id: 'p' + Date.now(), proveedor, categoria, codigo, nombre, talle, color, precio, cantidad, notas,
     precioSugerido: parseFloat(document.getElementById('prod-precio-sugerido').value) || 0,
     precioContado: parseFloat(document.getElementById('prod-precio-contado').value) || 0,
     precioTarjeta: parseFloat(document.getElementById('prod-precio-tarjeta').value) || 0,
     creadoEn: new Date().toISOString()
   };
-  db.stock.push(prod);
+  arrDest.push(prod);
+  recalcularStockUnion();
   await saveDB();
-  logAudit('STOCK_NUEVO', `${nombre} (${codigo}) — ${cantidad} unidades — $${precio}`);
+  logAudit('STOCK_NUEVO', nombre + ' (' + codigo + ') — ' + cantidad + ' unidades — ' + (proveedor==='lolitabb'?'LolitaBB':'Coffee'));
   closeModal('modal-producto');
   document.getElementById('prod-codigo').value = '';
   document.getElementById('prod-nombre').value = '';
@@ -2360,13 +2486,18 @@ async function guardarProducto() {
   document.getElementById('prod-cantidad').value = '1';
   document.getElementById('prod-notas').value = '';
   renderStock();
-  toast('Producto guardado ✓', 'success');
+  toast('Producto guardado', 'success');
 }
 
 function editarProducto(id) {
-  const p = db.stock.find(x => x.id == id);
+  const p = encontrarItem(id);
   if (!p) return;
   document.getElementById('edit-prod-id').value = p.id;
+  const ep = document.getElementById('edit-prod-proveedor');
+  if (ep) ep.value = p.proveedor || 'lince';
+  const ec = document.getElementById('edit-prod-categoria');
+  if (ec) ec.value = p.categoria || '';
+  if (ep) toggleEditProdCategoria(ep.value);
   document.getElementById('edit-prod-codigo').value = p.codigo || '';
   document.getElementById('edit-prod-nombre').value = p.nombre || '';
   document.getElementById('edit-prod-talle').value = p.talle || '';
@@ -2382,59 +2513,97 @@ function editarProducto(id) {
 
 async function guardarEditProducto() {
   const id = document.getElementById('edit-prod-id').value;
-  const idx = db.stock.findIndex(x => x.id === id);
-  if (idx === -1) return;
   const codigo = document.getElementById('edit-prod-codigo').value.trim();
   const nombre = document.getElementById('edit-prod-nombre').value.trim();
   if (!nombre || !codigo) { toast('Nombre y código son obligatorios.', 'error'); return; }
   const talle = document.getElementById('edit-prod-talle').value.trim();
   const color = document.getElementById('edit-prod-color').value.trim();
-  const duplicado = db.stock.find(p => p.codigo === codigo && p.talle === talle && p.color === color && p.id !== id);
+  const proveedor = (document.getElementById('edit-prod-proveedor')?.value || 'lince');
+  const categoria = (document.getElementById('edit-prod-categoria')?.value || '');
+  // buscar el item en la DB indicada
+  const arrDest = (proveedor === 'lolitabb') ? db.stockLolitabb : db.stockLince;
+  const idx = arrDest.findIndex(x => String(x.id) === String(id));
+  const duplicado = arrDest.find(p => p.codigo === codigo && p.talle === talle && p.color === color && String(p.id) !== String(id));
   if (duplicado) { toast('Ya existe otro producto con ese código, talle y color.', 'error'); return; }
-  
-  db.stock[idx] = {
-    ...db.stock[idx],
-    codigo,
-    nombre,
-    talle,
-    color: document.getElementById('edit-prod-color').value.trim(),
-    precio: parseFloat(document.getElementById('edit-prod-precio').value) || 0,
-    precioSugerido: parseFloat(document.getElementById('edit-prod-precio-sugerido').value) || 0,
-    precioContado: parseFloat(document.getElementById('edit-prod-precio-contado').value) || 0,
-    precioTarjeta: parseFloat(document.getElementById('edit-prod-precio-tarjeta').value) || 0,
-    cantidad: parseInt(document.getElementById('edit-prod-cantidad').value) || 0,
-    notas: document.getElementById('edit-prod-notas').value.trim(),
-  };
+  if (idx === -1) {
+    // pudo haber cambiado la DB; mover de la otra
+    db.stockLince = (db.stockLince||[]).filter(x => String(x.id) !== String(id));
+    db.stockLolitabb = (db.stockLolitabb||[]).filter(x => String(x.id) !== String(id));
+    arrDest.push({
+      id, proveedor, categoria, codigo, nombre, talle, color,
+      precio: parseFloat(document.getElementById('edit-prod-precio').value) || 0,
+      precioSugerido: parseFloat(document.getElementById('edit-prod-precio-sugerido').value) || 0,
+      precioContado: parseFloat(document.getElementById('edit-prod-precio-contado').value) || 0,
+      precioTarjeta: parseFloat(document.getElementById('edit-prod-precio-tarjeta').value) || 0,
+      cantidad: parseInt(document.getElementById('edit-prod-cantidad').value) || 0,
+      notas: document.getElementById('edit-prod-notas').value.trim(),
+      creadoEn: new Date().toISOString()
+    });
+  } else {
+    arrDest[idx] = {
+      ...arrDest[idx],
+      proveedor, categoria, codigo, nombre, talle, color,
+      precio: parseFloat(document.getElementById('edit-prod-precio').value) || 0,
+      precioSugerido: parseFloat(document.getElementById('edit-prod-precio-sugerido').value) || 0,
+      precioContado: parseFloat(document.getElementById('edit-prod-precio-contado').value) || 0,
+      precioTarjeta: parseFloat(document.getElementById('edit-prod-precio-tarjeta').value) || 0,
+      cantidad: parseInt(document.getElementById('edit-prod-cantidad').value) || 0,
+      notas: document.getElementById('edit-prod-notas').value.trim(),
+    };
+  }
+  recalcularStockUnion();
   await saveDB();
-  logAudit('STOCK_EDIT', `${nombre} (${codigo})`);
+  logAudit('STOCK_EDIT', nombre + ' (' + codigo + ')');
   closeModal('modal-edit-producto');
   renderStock();
-  toast('Producto actualizado ✓', 'success');
+  toast('Producto actualizado', 'success');
 }
 
 async function eliminarProducto(id) {
-  const p = db.stock.find(x => x.id == id);
+  const p = encontrarItem(id);
   if (!p) return;
-  if (!confirm(`¿Eliminar "${p.nombre}" (${p.codigo}) del stock?`)) return;
-  db.stock = db.stock.filter(x => x.id !== id);
+  if (!confirm('Eliminar "' + p.nombre + '" (' + p.codigo + ') del stock?')) return;
+  db.stockLince = (db.stockLince||[]).filter(x => String(x.id) !== String(id));
+  db.stockLolitabb = (db.stockLolitabb||[]).filter(x => String(x.id) !== String(id));
+  recalcularStockUnion();
   await saveDB();
-  logAudit('STOCK_ELIMINAR', `${p.nombre} (${p.codigo})`);
+  logAudit('STOCK_ELIMINAR', p.nombre + ' (' + p.codigo + ')');
   renderStock();
   toast('Producto eliminado.', 'success');
 }
 
 async function importarStockLince() {
-  if (!confirm(`¿Reemplazar TODO el stock actual (${db.stock.length} registros) con los datos del sistema Lince (1721 variantes, 2058 unidades)? Los productos manuales se perderán.`)) return;
+  if (!confirm(¿Reemplazar el stock COFFEE (Lince) — ${(db.stockLince||[]).length} registros — con los datos de stock-lince.json? El stock de LOLITABB NO se toca.)) return;
   try {
     const r = await fetch('stock-lince.json?_=' + Date.now());
     if (!r.ok) { toast('Error: no se encontró stock-lince.json', 'error'); return; }
     const lince = await r.json();
-    db.stock = lince;
-    const unids = db.stock.reduce((s,x)=>s+(x.cantidad||0),0);
+    lince.forEach(p => { if (!p.proveedor) p.proveedor = 'lince'; });
+    db.stockLince = lince;
+    recalcularStockUnion();
+    const unids = db.stockLince.reduce((s,x)=>s+(x.cantidad||0),0);
     await saveDB();
-    logAudit('STOCK_REPLACE_LINCE', `Reemplazado stock con datos Lince: ${db.stock.length} registros, ${unids} unidades`);
+    logAudit('STOCK_REPLACE_LINCE', Reemplazado stockLince:  registros,  unidades);
     renderStock();
-    toast(`✓ Stock reemplazado: ${db.stock.length} registros, ${unids} unidades`, 'success');
+    toast(" + ✓ + " Stock Coffee reemplazado:  registros,  unidades, 'success');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function importarStockLolitabb() {
+  if (!confirm(¿Reemplazar el stock LOLITABB —  registros — con los datos de stock-lolitabb.json (Excel Flores)? El stock de COFFEE NO se toca.)) return;
+  try {
+    const r = await fetch('stock-lolitabb.json?_=' + Date.now());
+    if (!r.ok) { toast('Error: no se encontró stock-lolitabb.json', 'error'); return; }
+    const data = await r.json();
+    data.forEach(p => { p.proveedor = 'lolitabb'; });
+    db.stockLolitabb = data;
+    recalcularStockUnion();
+    const unids = db.stockLolitabb.reduce((s,x)=>s+(x.cantidad||0),0);
+    await saveDB();
+    logAudit('STOCK_REPLACE_LOLITABB', Reemplazado stockLolitabb:  registros,  unidades);
+    try { dbfLolitaData = []; } catch(e) {}
+    renderStock();
+    toast(" + ✓ + " Stock LolitaBB reemplazado:  registros,  unidades, 'success');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
@@ -2452,7 +2621,7 @@ function buscarProductoVenta() {
   const cont = document.getElementById('venta-resultados-prod');
   if (!q) { cont.style.display = 'none'; return; }
   
-  const resultados = (db.stock || []).filter(p =>
+  const resultados = todoStock().filter(p =>
     p.cantidad > 0 &&
     ((p.codigo||'').toLowerCase().startsWith(q) ||
      (p.color||'').toLowerCase().includes(q) ||
@@ -2480,7 +2649,7 @@ function buscarProductoVenta() {
       <div style="display:flex;gap:4px;align-items:center">
         <button ${sel} class="btn-sm ${L==='precioSugerido'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L3 $${fmtMoney(p3)}</button>
         <button ${sel2} class="btn-sm ${L==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L4 $${fmtMoney(p4)}</button>
-        <button ${sel3} class="btn-sm ${L==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L5 $${fmtMoney(p5)}</button>
+        ${p5 > 0 ? `<button ${sel3} class="btn-sm ${L==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L5 $${fmtMoney(p5)}</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -2488,7 +2657,7 @@ function buscarProductoVenta() {
 }
 
 function agregarAlCarrito(prodId, lista) {
-  const p = db.stock.find(x => x.id == prodId);
+  const p = encontrarItem(prodId);
   if (!p) return;
   if (!lista) lista = 'precioTarjeta';
   window._listaPorDefecto = lista;
@@ -2531,7 +2700,7 @@ function renderCarrito() {
         <div style="display:flex;gap:4px;margin-top:4px">
           <span class="btn-sm ${item.lista==='precioSugerido'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioSugerido')">L3 $${fmtMoney(p3)}</span>
           <span class="btn-sm ${item.lista==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioContado')">L4 $${fmtMoney(p4)}</span>
-          <span class="btn-sm ${item.lista==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioTarjeta')">L5 $${fmtMoney(p5)}</span>
+          ${p5 > 0 ? `<span class="btn-sm ${item.lista==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCarrito(${i},'precioTarjeta')">L5 $${fmtMoney(p5)}</span>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
           <span class="btn-sm ${item.descuentoTipo==='porcentaje'?'btn-primary':'btn-ghost'}" style="padding:1px 5px;font-size:10px;cursor:pointer;min-width:18px;text-align:center" onclick="cambiarTipoDescuentoCarrito(${i})">%</span>
@@ -2638,7 +2807,7 @@ async function confirmarAjusteStock() {
   const cant = parseInt(document.getElementById('ajuste-cantidad').value) || 0;
   const motivo = document.getElementById('ajuste-motivo').value.trim();
   if (cant <= 0) { toast('Cantidad inválida.', 'error'); return; }
-  const p = db.stock.find(x => x.id == id);
+  const p = encontrarItem(id);
   if (!p) return;
   const anterior = p.cantidad;
   if (tipo === 'suma') p.cantidad += cant;
@@ -2654,9 +2823,9 @@ async function confirmarAjusteStock() {
 function autoSelectSiUnico() {
   const q = (document.getElementById('venta-buscar-prod')?.value || '').trim();
   if (!q) return;
-  const exacto = db.stock.find(p => p.cantidad > 0 && p.codigo === q);
+  const exacto = todoStock().find(p => p.cantidad > 0 && p.codigo === q);
   if (exacto) { agregarAlCarrito(exacto.id); return; }
-  const res = db.stock.filter(p => p.cantidad > 0 && (p.codigo||'').toLowerCase().startsWith(q.toLowerCase()));
+  const res = todoStock().filter(p => p.cantidad > 0 && (p.codigo||'').toLowerCase().startsWith(q.toLowerCase()));
   if (res.length === 1) agregarAlCarrito(res[0].id);
 }
 
@@ -2743,7 +2912,7 @@ function buscarProductoCambio() {
   const q = document.getElementById('dev-buscar-cambio').value.toLowerCase().trim();
   const cont = document.getElementById('dev-resultados-cambio');
   if (!q) { cont.style.display = 'none'; return; }
-  const resultados = (db.stock || []).filter(p =>
+  const resultados = todoStock().filter(p =>
     p.cantidad > 0 && (
       (p.codigo||'').toLowerCase().includes(q) ||
       (p.nombre||'').toLowerCase().includes(q) ||
@@ -2767,7 +2936,7 @@ function buscarProductoCambio() {
       <div style="display:flex;gap:4px;align-items:center">
         <button ${sel} class="btn-sm ${L==='precioSugerido'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L3 $${fmtMoney(p3)}</button>
         <button ${sel2} class="btn-sm ${L==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L4 $${fmtMoney(p4)}</button>
-        <button ${sel3} class="btn-sm ${L==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L5 $${fmtMoney(p5)}</button>
+        ${p5 > 0 ? `<button ${sel3} class="btn-sm ${L==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:4px 8px;font-size:11px">L5 $${fmtMoney(p5)}</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -2775,7 +2944,7 @@ function buscarProductoCambio() {
 }
 
 function agregarAlCarritoCambio(prodId, lista) {
-  const p = db.stock.find(x => x.id == prodId);
+  const p = encontrarItem(prodId);
   if (!p) return;
   if (!lista) lista = window._listaPorDefecto || 'precioTarjeta';
   window._listaPorDefecto = lista;
@@ -2817,7 +2986,7 @@ function renderCarritoCambio() {
         <div style="display:flex;gap:4px;margin-top:4px">
           <span class="btn-sm ${item.lista==='precioSugerido'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCambio(${i},'precioSugerido')">L3 $${fmtMoney(p3)}</span>
           <span class="btn-sm ${item.lista==='precioContado'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCambio(${i},'precioContado')">L4 $${fmtMoney(p4)}</span>
-          <span class="btn-sm ${item.lista==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCambio(${i},'precioTarjeta')">L5 $${fmtMoney(p5)}</span>
+          ${p5 > 0 ? `<span class="btn-sm ${item.lista==='precioTarjeta'?'btn-primary':'btn-ghost'}" style="padding:2px 6px;font-size:10px;cursor:pointer" onclick="cambiarListaCambio(${i},'precioTarjeta')">L5 $${fmtMoney(p5)}</span>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap">
           <span class="btn-sm ${item.descuentoTipo==='porcentaje'?'btn-primary':'btn-ghost'}" style="padding:1px 5px;font-size:10px;cursor:pointer;min-width:18px;text-align:center" onclick="cambiarTipoDescuentoCambio(${i})">%</span>
@@ -2903,7 +3072,7 @@ async function confirmarDevolucion() {
 
   // 1. Sumar al stock los productos devueltos
   devueltos.forEach(dev => {
-    const prod = db.stock.find(x => x.id == dev.id) || db.stock.find(x => x.codigo === dev.codigo);
+    const prod = encontrarItem(dev.id) || todoStock().find(x => x.codigo === dev.codigo);
     if (prod) prod.cantidad += dev.cantidadDevuelta;
   });
 
@@ -2913,7 +3082,7 @@ async function confirmarDevolucion() {
   let totalCambio = 0;
   if (carritoCambio.length) {
     carritoCambio.forEach(item => {
-      const prod = db.stock.find(x => x.id == item.producto.id);
+      const prod = encontrarItem(item.producto.id);
       if (prod) prod.cantidad = Math.max(0, prod.cantidad - item.cantidad);
     });
     totalCambio = carritoCambio.reduce((s, item) => s + precioConDescuentoCambio(item) * item.cantidad, 0);
@@ -2957,7 +3126,7 @@ async function confirmarDevolucionStock() {
   const cant = parseInt(document.getElementById('dev-stock-cantidad').value) || 0;
   const motivo = document.getElementById('dev-stock-motivo').value.trim() || 'Devolución rápida';
   if (cant <= 0) { toast('Cantidad inválida.', 'error'); return; }
-  const p = db.stock.find(x => x.id == prodId);
+  const p = encontrarItem(prodId);
   if (!p) return;
   p.cantidad += cant;
   const monto = (p.precio || 0) * cant;
@@ -2992,6 +3161,15 @@ iniciarApp();
         💡 Podés escanear el código de barras directamente en el campo Código
       </div>
       <div class="form-row">
+        <div class="form-group"><label>Base de datos</label><select id="prod-proveedor" onchange="toggleProdCategoria(this.value)">
+          <option value="lince">Coffee (Lince)</option>
+          <option value="lolitabb">LolitaBB</option>
+        </select></div>
+        <div class="form-group" id="prod-categoria-wrap" style="display:none"><label>Categoría (LolitaBB)</label><select id="prod-categoria">
+          <option value="">Sin categoría</option><option value="Baby">Baby</option><option value="Mini">Mini</option><option value="Kids">Kids</option><option value="Shura">Shura</option><option value="Camperas">Camperas</option>
+        </select></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label>Código / Barcode</label><input type="text" id="prod-codigo" placeholder="Ej: COD-001 o escanear" autofocus></div>
         <div class="form-group"><label>Precio base ($)</label><input type="number" id="prod-precio" placeholder="0.00" min="0" step="0.01"></div>
       </div>
@@ -3024,6 +3202,15 @@ iniciarApp();
     <div class="modal-header"><h3>✏ Editar Producto</h3><button class="modal-close" onclick="closeModal('modal-edit-producto')">✕</button></div>
     <div class="modal-body">
       <input type="hidden" id="edit-prod-id">
+      <div class="form-row">
+        <div class="form-group"><label>Base de datos</label><select id="edit-prod-proveedor" onchange="toggleEditProdCategoria(this.value)">
+          <option value="lince">Coffee (Lince)</option>
+          <option value="lolitabb">LolitaBB</option>
+        </select></div>
+        <div class="form-group" id="edit-prod-categoria-wrap" style="display:none"><label>Categoría (LolitaBB)</label><select id="edit-prod-categoria">
+          <option value="">Sin categoría</option><option value="Baby">Baby</option><option value="Mini">Mini</option><option value="Kids">Kids</option><option value="Shura">Shura</option><option value="Camperas">Camperas</option>
+        </select></div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Código / Barcode</label><input type="text" id="edit-prod-codigo" placeholder="Ej: COD-001"></div>
         <div class="form-group"><label>Precio base ($)</label><input type="number" id="edit-prod-precio" placeholder="0.00" min="0" step="0.01"></div>
