@@ -1931,16 +1931,16 @@ async function renderDBFLolita() {
   const c = document.getElementById('dbfl-count'); if (c) c.textContent = filtered.length + ' productos';
   const el = document.getElementById('tabla-dbfl');
   if (!el) return;
-  el.innerHTML = filtered.map(p => \<tr>
-    <td><code>\</code></td>
-    <td>\</td>
-    <td>\</td>
-    <td>\</td>
-    <td>\</td>
-    <td>\</td>
-    <td><strong>\</strong></td>
-    <td><span style="background:var(--cream-dark);color:var(--text-mid);padding:2px 8px;border-radius:10px;font-size:11px">\</span></td>
-  </tr>\).join('');
+  el.innerHTML = filtered.map(p => `<tr>
+    <td><code>${esc(p.codigo||'')}</code></td>
+    <td>${esc(p.nombre)}</td>
+    <td>${esc(p.color||'')}</td>
+    <td>${esc(p.talle||'')}</td>
+    <td>${p.cantidad}</td>
+    <td>${fmtMoney(p.precioSugerido||0)}</td>
+    <td><strong>${fmtMoney(p.precioContado||0)}</strong></td>
+    <td><span style="background:var(--cream-dark);color:var(--text-mid);padding:2px 8px;border-radius:10px;font-size:11px">${esc(p.categoria||'')}</span></td>
+  </tr>`).join('');
 }
 async function importarDBFaStock() {
   if (!dbfData.length) { toast('Primero cargá la página DBF.', 'error'); return; }
@@ -2297,7 +2297,7 @@ async function migrarDosDBs() {
   }
   recalcularStockUnion();
   if (cambios > 0) { await saveDB(); console.log('[migrarDosDBs] corregidos ' + cambios + ' registros.'); } else { recalcularStockUnion(); }
-}}
+}
 
 // ══════════════════════════════════════
 //  STOCK
@@ -2573,7 +2573,7 @@ async function eliminarProducto(id) {
 }
 
 async function importarStockLince() {
-  if (!confirm(¿Reemplazar el stock COFFEE (Lince) — ${(db.stockLince||[]).length} registros — con los datos de stock-lince.json? El stock de LOLITABB NO se toca.)) return;
+  if (!confirm(`¿Reemplazar el stock COFFEE (Lince) — ${(db.stockLince||[]).length} registros — con los datos de stock-lince.json? El stock de LOLITABB NO se toca.`)) return;
   try {
     const r = await fetch('stock-lince.json?_=' + Date.now());
     if (!r.ok) { toast('Error: no se encontró stock-lince.json', 'error'); return; }
@@ -2583,14 +2583,14 @@ async function importarStockLince() {
     recalcularStockUnion();
     const unids = db.stockLince.reduce((s,x)=>s+(x.cantidad||0),0);
     await saveDB();
-    logAudit('STOCK_REPLACE_LINCE', Reemplazado stockLince:  registros,  unidades);
+    logAudit('STOCK_REPLACE_LINCE', `Reemplazado stockLince: ${db.stockLince.length} registros, ${unids} unidades`);
     renderStock();
-    toast(" + ✓ + " Stock Coffee reemplazado:  registros,  unidades, 'success');
+    toast(`✓ Stock Coffee reemplazado: ${db.stockLince.length} registros, ${unids} unidades`, 'success');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function importarStockLolitabb() {
-  if (!confirm(¿Reemplazar el stock LOLITABB —  registros — con los datos de stock-lolitabb.json (Excel Flores)? El stock de COFFEE NO se toca.)) return;
+  if (!confirm(`¿Reemplazar el stock LOLITABB — ${(db.stockLolitabb||[]).length} registros — con los datos de stock-lolitabb.json (Excel Flores)? El stock de COFFEE NO se toca.`)) return;
   try {
     const r = await fetch('stock-lolitabb.json?_=' + Date.now());
     if (!r.ok) { toast('Error: no se encontró stock-lolitabb.json', 'error'); return; }
@@ -2600,10 +2600,10 @@ async function importarStockLolitabb() {
     recalcularStockUnion();
     const unids = db.stockLolitabb.reduce((s,x)=>s+(x.cantidad||0),0);
     await saveDB();
-    logAudit('STOCK_REPLACE_LOLITABB', Reemplazado stockLolitabb:  registros,  unidades);
+    logAudit('STOCK_REPLACE_LOLITABB', `Reemplazado stockLolitabb: ${db.stockLolitabb.length} registros, ${unids} unidades`);
     try { dbfLolitaData = []; } catch(e) {}
     renderStock();
-    toast(" + ✓ + " Stock LolitaBB reemplazado:  registros,  unidades, 'success');
+    toast(`✓ Stock LolitaBB reemplazado: ${db.stockLolitabb.length} registros, ${unids} unidades`, 'success');
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
