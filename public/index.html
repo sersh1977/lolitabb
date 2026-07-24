@@ -1534,8 +1534,8 @@ function renderDashboard() {
   const balanceNeto = acreditaciones.filter(a=>a.acreditado).reduce((a,b)=>a+b.neto,0) - db.gastos.reduce((a,b)=>a+b.monto,0);
   const elBalBruto = document.getElementById('stat-balance-bruto');
   const elBalNeto = document.getElementById('stat-balance-neto');
-  if (elBalBruto) { elBalBruto.textContent = '$ ' + fmtMoney(balanceBruto); elBalBruto.style.color = balanceBruto>=0?'var(--mint-dark)':'var(--danger)'; }
-  if (elBalNeto) { elBalNeto.textContent = '$ ' + fmtMoney(balanceNeto); elBalNeto.style.color = balanceNeto>=0?'var(--mint-dark)':'var(--danger)'; }
+  if (elBalBruto) { elBalBruto.textContent = fmtMoney(balanceBruto) + ' (Bruto)'; elBalBruto.style.color = balanceBruto>=0?'var(--mint-dark)':'var(--danger)'; }
+  if (elBalNeto) { elBalNeto.textContent = fmtMoney(balanceNeto) + ' (Neto)'; elBalNeto.style.color = balanceNeto>=0?'var(--mint-dark)':'var(--danger)'; }
   const totalAcreditar=acreditaciones.filter(x=>{
     if(x.acreditado) return false;
     const d=new Date(x.fechaAcreditacion+'T12:00:00');
@@ -3143,10 +3143,11 @@ async function confirmarDevolucion() {
   // 3. Crear gasto por devolución (si hay monto a devolver)
   if (neto > 0) {
     const detalleDev = devueltos.map(d => `${d.nombre} x${d.cantidadDevuelta}`).join(', ');
-    const detalleCambio = carritoCambio.length ? ` | Cambio: ${carritoCambio.map(c => `${c.producto.nombre} x${c.cantidad}`).join(', ')}` : '';
+    const detalleCambio = carritoCambio.length ? carritoCambio.map(c => `${c.producto.nombre} x${c.cantidad}`).join(', ') : '';
+    const conceptoFinal = detalleCambio ? `Cambio: ${detalleCambio} (por ${detalleDev})` : `Devolución: ${detalleDev}`;
     db.gastos.push({
       id: Date.now(),
-      concepto: `Devolución: ${detalleDev}`,
+      concepto: conceptoFinal,
       monto: neto,
       fecha: new Date().toISOString().split('T')[0],
       hora: new Date().toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'}),
