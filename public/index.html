@@ -302,7 +302,7 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <div class="stat-card income"><div class="stat-label">Ingresos hoy</div><div class="stat-value money-val" id="stat-ing-hoy">$0,00</div><div class="stat-sub">Total del día</div></div>
         <div class="stat-card expense"><div class="stat-label">Gastos hoy</div><div class="stat-value money-val" id="stat-gast-hoy">$0,00</div><div class="stat-sub">Total del día</div></div>
         <div class="stat-card balance"><div class="stat-label">Balance del mes</div><div class="stat-value money-val" id="stat-balance-mes">$0,00</div><div class="stat-sub" id="stat-balance-sub">Superávit del mes</div></div>
-        <div class="stat-card balance" style="border-left-color:var(--coffee)"><div class="stat-label">Balance general</div><div class="stat-value money-val" id="stat-balance-general">$0,00</div><div class="stat-sub">Desde el inicio</div></div>
+        <div class="stat-card balance" style="border-left-color:var(--coffee)"><div class="stat-label">Balance general</div><div class="stat-value money-val" id="stat-balance-bruto" style="font-size:13px">$0,00</div><div class="stat-value money-val" id="stat-balance-neto" style="font-size:16px">$0,00</div><div class="stat-sub">Bruto | Neto <span style="font-weight:400;color:var(--text-soft)">(desde inicio)</span></div></div>
         <div class="stat-card pending" style="cursor:pointer" onclick="goTo('acreditaciones')" title="Ver detalle en Acreditaciones"><div class="stat-label">Por acreditar (próx. 7 días, neto)</div><div class="stat-value money-val" id="stat-acreditar">$0,00</div><div class="stat-sub">Click para ver detalle en Acreditaciones</div></div>
       </div>
       <div class="chart-grid">
@@ -1529,10 +1529,13 @@ function renderDashboard() {
   document.getElementById('stat-balance-mes').textContent=fmtMoney(balance);
   document.getElementById('stat-balance-mes').style.color=balance>=0?'var(--mint-dark)':'var(--danger)';
   document.getElementById('stat-balance-sub').textContent=balance>=0?'Superávit del mes':'Déficit del mes';
-  const balanceGeneral = db.ingresos.filter(i=>i.tipo==='efectivo'||i.tipo==='transferencia'||i.acreditado===true).reduce((a,b)=>a+b.monto,0) - db.gastos.reduce((a,b)=>a+b.monto,0);
-  const elBalGen = document.getElementById('stat-balance-general');
-  if (elBalGen) { elBalGen.textContent = fmtMoney(balanceGeneral); elBalGen.style.color = balanceGeneral>=0?'var(--mint-dark)':'var(--danger)'; }
+  const balanceBruto = db.ingresos.filter(i=>i.tipo==='efectivo'||i.tipo==='transferencia'||i.acreditado===true).reduce((a,b)=>a+b.monto,0) - db.gastos.reduce((a,b)=>a+b.monto,0);
   const acreditaciones=obtenerAcreditaciones();
+  const balanceNeto = acreditaciones.filter(a=>a.acreditado).reduce((a,b)=>a+b.neto,0) - db.gastos.reduce((a,b)=>a+b.monto,0);
+  const elBalBruto = document.getElementById('stat-balance-bruto');
+  const elBalNeto = document.getElementById('stat-balance-neto');
+  if (elBalBruto) { elBalBruto.textContent = '$ ' + fmtMoney(balanceBruto); elBalBruto.style.color = balanceBruto>=0?'var(--mint-dark)':'var(--danger)'; }
+  if (elBalNeto) { elBalNeto.textContent = '$ ' + fmtMoney(balanceNeto); elBalNeto.style.color = balanceNeto>=0?'var(--mint-dark)':'var(--danger)'; }
   const totalAcreditar=acreditaciones.filter(x=>{
     if(x.acreditado) return false;
     const d=new Date(x.fechaAcreditacion+'T12:00:00');
