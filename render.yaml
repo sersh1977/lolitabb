@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lolitabb
+    runtime: node
+    region: ohio
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
