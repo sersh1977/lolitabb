@@ -376,7 +376,8 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div class="stat-grid">
         <div class="stat-card income"><div class="stat-label">Total ingresos</div><div class="stat-value money-val" id="rep-ing">$0</div></div>
         <div class="stat-card expense"><div class="stat-label">Total gastos</div><div class="stat-value money-val" id="rep-gast">$0</div></div>
-        <div class="stat-card balance"><div class="stat-label">Balance neto</div><div class="stat-value money-val" id="rep-balance">$0</div></div>
+        <div class="stat-card pending"><div class="stat-label">Restante a acreditarse</div><div class="stat-value money-val" id="rep-pendiente">$0</div></div>
+        <div class="stat-card balance"><div class="stat-label">Balance</div><div class="stat-value money-val" id="rep-balance-bruto" style="font-size:13px">$0,00</div><div class="stat-value money-val" id="rep-balance-neto" style="font-size:16px">$0,00</div><div class="stat-sub">Bruto | Neto <span style="font-weight:400;color:var(--text-soft)">(período)</span></div></div>
       </div>
       <div class="filter-bar" style="margin-bottom:20px">
         <button class="filter-btn active" onclick="setFilter('reportes','semana',this)">Esta semana</button>
@@ -1713,11 +1714,17 @@ function renderReportes() {
   const rango=filters.reportes;
   const ings=filtrarPorRango(db.ingresos,rango), gasts=filtrarPorRango(db.gastos,rango);
   const totalIng=ings.reduce((a,b)=>a+b.monto,0), totalGast=gasts.reduce((a,b)=>a+b.monto,0);
-  const bal=totalIng-totalGast;
+  const totalIngNeto=ings.reduce((s,reg)=>s+calcularAcreditacion(reg).reduce((a,p)=>a+p.neto,0),0);
+  const balBruto=totalIng-totalGast;
+  const balNeto=totalIngNeto-totalGast;
+  const pendiente=obtenerAcreditaciones().filter(x=>!x.acreditado).reduce((a,b)=>a+b.neto,0);
   document.getElementById('rep-ing').innerHTML=moneySpan(totalIng);
   document.getElementById('rep-gast').innerHTML=moneySpan(totalGast);
-  document.getElementById('rep-balance').innerHTML=moneySpan(bal);
-  document.getElementById('rep-balance').style.color=bal>=0?'var(--mint-dark)':'var(--danger)';
+  document.getElementById('rep-pendiente').innerHTML=moneySpan(pendiente);
+  document.getElementById('rep-balance-bruto').innerHTML=moneySpan(balBruto)+' (Bruto)';
+  document.getElementById('rep-balance-bruto').style.color=balBruto>=0?'var(--mint-dark)':'var(--danger)';
+  document.getElementById('rep-balance-neto').innerHTML=moneySpan(balNeto)+' (Neto)';
+  document.getElementById('rep-balance-neto').style.color=balNeto>=0?'var(--mint-dark)':'var(--danger)';
   try {
     const labels=[], dI=[], dG=[];
     if (rango==='semana') {
