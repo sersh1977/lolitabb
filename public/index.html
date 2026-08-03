@@ -538,7 +538,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
           <h4>☕ Productos DBF Coffee</h4>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input type="text" id="dbf-buscar" placeholder="🔍 Buscar por código o nombre..." style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderDBF()">
+            <input type="text" id="dbf-codigo-desde" placeholder="Código desde" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:110px;background:var(--cream)" oninput="renderDBF()">
+            <input type="text" id="dbf-codigo-hasta" placeholder="Código hasta" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:110px;background:var(--cream)" oninput="renderDBF()">
             <span style="font-size:12px;color:var(--text-soft);align-self:center" id="dbf-count"></span>
+            <button class="btn btn-ghost" onclick="exportarDBFCoffee('excel')" style="padding:6px 14px;font-size:12px" title="Descargar listado visible en Excel">⬇ Excel</button>
+            <button class="btn btn-ghost" onclick="exportarDBFCoffee('pdf')" style="padding:6px 14px;font-size:12px" title="Descargar listado visible en PDF">⬇ PDF</button>
           </div>
         </div>
         <div class="table-wrap"><table><thead><tr>
@@ -1892,6 +1896,7 @@ function renderAuditoria() {
 //  DBF ORIGINAL
 // ══════════════════════════════════════
 let dbfData = [];
+let dbfCoffeeFiltrado = [];
 
 async function renderDBF() {
   if (!dbfData.length) {
@@ -1904,9 +1909,16 @@ async function renderDBF() {
     }
   }
   const q = (document.getElementById('dbf-buscar')?.value || '').toLowerCase().trim();
-  const filtered = q ? dbfData.filter(p =>
-    p.codigo.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)
-  ) : dbfData;
+  const desde = (document.getElementById('dbf-codigo-desde')?.value || '').trim().toLowerCase();
+  const hasta = (document.getElementById('dbf-codigo-hasta')?.value || '').trim().toLowerCase();
+  let filtered = dbfData.filter(p => {
+    const cod = String(p.codigo || '').toLowerCase();
+    if (desde && cod < desde) return false;
+    if (hasta && cod > hasta) return false;
+    if (q && !cod.includes(q) && !String(p.nombre || '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  dbfCoffeeFiltrado = filtered;
   document.getElementById('dbf-count').textContent = `${filtered.length} productos`;
   document.getElementById('tabla-dbf').innerHTML = filtered.map(p => {
     const apr3x2 = Math.round(p.APR3 * 2 * 100) / 100;
@@ -1924,7 +1936,74 @@ async function renderDBF() {
   }).join('');
 }
 
-let dbfLolitaData = [];
+function exportarDBFCoffee(tipo) {
+  const data = dbfCoffeeFiltrado || [];
+  if (!data.length) { toast('No hay productos filtrados para exportar.', 'error'); return; }
+  const desde = (document.getElementById('dbf-codigo-desde')?.value || '').trim() || 'inicio';
+  const hasta = (document.getElementById('dbf-codigo-hasta')?.value || '').trim() || 'fin';
+
+  if (tipo === 'excel') {
+    const rows = data.map(p => `<tr>
+      <td>${esc(p.codigo)}</td><td>${esc(p.nombre)}</td>
+      <td style="text-align:right">${Number(p.APR2||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td style="text-align:right">${Number(p.APR3||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td style="text-align:right">${Number(p.APR4||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td style="text-align:right">${Number(p.APR5||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td style="text-align:right">${Number(p.APR6||0).toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td style="text-align:right">${p.stock}</td>
+    </tr>`).join('');
+    const html = `<html><head><meta charset="utf-8"><style>
+      table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;width:100%}
+      th{background:#0B6E6E;color:#fff;padding:8px 10px;text-align:left}
+      td{border:1px solid #ccc;padding:6px 10px}
+    </style></head><body>
+      <h2>DBF Coffee — ${data.length} productos</h2>
+      <p>Rango de códigos: ${desde} a ${hasta} · Generado el ${new Date().toLocaleDateString('es-AR')}</p>
+      <table><thead><tr><th>Código</th><th>Nombre</th><th>APR2</th><th>APR3 (Base)</th><th>APR4</th><th>APR5</th><th>APR6</th><th>Stock</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </body></html>`;
+    const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `dbf-coffee-${desde}-a-${hasta}.xls`; a.click();
+    URL.revokeObjectURL(url);
+    toast('Excel exportado ✓', 'success');
+    return;
+  }
+
+  if (tipo === 'pdf') {
+    if (typeof jspdf === 'undefined' || typeof jspdf.jsPDF === 'undefined') {
+      toast('No se pudo generar el PDF: revisá tu conexión a internet', 'error'); return;
+    }
+    const { jsPDF } = jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const pw = doc.internal.pageSize.getWidth();
+    const fechaHoy = fmtDate(new Date().toISOString().split('T')[0]);
+    doc.setFillColor(11,110,110); doc.rect(0,0,pw,60,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+    doc.text('Lolita Bebe',40,30);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text('DBF Coffee — Listado de productos',40,46);
+    doc.text(`Generado: ${fechaHoy}`,pw-40,30,{align:'right'});
+    doc.setTextColor(20,50,48); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+    doc.text(`Productos: ${data.length}`,40,82);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(110,130,128);
+    doc.text(`Rango de códigos: ${desde} a ${hasta}`,40,98);
+    const head=[['Código','Nombre','APR2','APR3 (Base)','APR4','APR5','APR6','Stock']];
+    const body=data.map(p=>[String(p.codigo),String(p.nombre),fmtMoney(p.APR2||0),fmtMoney(p.APR3||0),fmtMoney(p.APR4||0),fmtMoney(p.APR5||0),fmtMoney(p.APR6||0),String(p.stock)]);
+    doc.autoTable({head,body,startY:112,margin:{left:40,right:40},theme:'grid',
+      styles:{fontSize:8,cellPadding:5,textColor:[20,50,48],lineColor:[220,237,233],lineWidth:0.5},
+      headStyles:{fillColor:[11,110,110],textColor:[255,255,255],fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[247,251,250]},
+      didDrawPage:d=>{
+        doc.setFontSize(8); doc.setTextColor(150,165,163);
+        doc.text(`Página ${d.pageNumber} de ${doc.internal.getNumberOfPages()}`,pw-40,doc.internal.pageSize.getHeight()-20,{align:'right'});
+      }
+    });
+    doc.save(`dbf-coffee-${desde}-a-${hasta}.pdf`);
+    toast('PDF exportado ✓', 'success');
+    return;
+  }
+}
 let dbflMostrarL3 = false;
 let dbflL3Init = false;
 
