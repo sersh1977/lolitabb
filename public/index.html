@@ -2010,8 +2010,13 @@ function exportarDBFCoffee(tipo) {
         doc.text(`Página ${d.pageNumber} de ${doc.internal.getNumberOfPages()}`,pw-40,doc.internal.pageSize.getHeight()-20,{align:'right'});
       }
     });
-    doc.save(`dbf-coffee-${desde}-a-${hasta}.pdf`);
-    toast('PDF exportado ✓', 'success');
+    try {
+      doc.save(`dbf-coffee-${desdeCod}-a-${hastaCod}.pdf`);
+      toast('PDF exportado ✓', 'success');
+    } catch (e) {
+      console.error('Error generando PDF DBF Coffee:', e);
+      toast('No se pudo generar el PDF: ' + (e.message || e), 'error');
+    }
     return;
   }
 }
