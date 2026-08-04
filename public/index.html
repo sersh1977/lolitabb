@@ -540,8 +540,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
             <input type="text" id="dbf-buscar" placeholder="🔍 Buscar por código o nombre..." style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderDBF()">
             <input type="text" id="dbf-codigo-desde" placeholder="Código desde" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:110px;background:var(--cream)" oninput="renderDBF()">
             <input type="text" id="dbf-codigo-hasta" placeholder="Código hasta" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:110px;background:var(--cream)" oninput="renderDBF()">
-            <input type="number" id="dbf-precio-desde" placeholder="Precio desde" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:110px;background:var(--cream)" oninput="renderDBF()" min="0" step="1">
-            <input type="number" id="dbf-precio-hasta" placeholder="Precio hasta" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:110px;background:var(--cream)" oninput="renderDBF()" min="0" step="1">
             <span style="font-size:12px;color:var(--text-soft);align-self:center" id="dbf-count"></span>
             <button class="btn btn-ghost" onclick="exportarDBFCoffee('excel')" style="padding:6px 14px;font-size:12px" title="Descargar listado visible en Excel">⬇ Excel</button>
             <button class="btn btn-ghost" onclick="exportarDBFCoffee('pdf')" style="padding:6px 14px;font-size:12px" title="Descargar listado visible en PDF">⬇ PDF</button>
@@ -1911,16 +1909,15 @@ async function renderDBF() {
     }
   }
   const q = (document.getElementById('dbf-buscar')?.value || '').toLowerCase().trim();
-  const desde = (document.getElementById('dbf-codigo-desde')?.value || '').trim().toLowerCase();
-  const hasta = (document.getElementById('dbf-codigo-hasta')?.value || '').trim().toLowerCase();
-  const precioDesde = Number(document.getElementById('dbf-precio-desde')?.value || '') || 0;
-  const precioHasta = Number(document.getElementById('dbf-precio-hasta')?.value || '') || 0;
+  const desde = (document.getElementById('dbf-codigo-desde')?.value || '').trim();
+  const hasta = (document.getElementById('dbf-codigo-hasta')?.value || '').trim();
+  const desdeNum = Number(desde) || 0;
+  const hastaNum = Number(hasta) || Infinity;
   let filtered = dbfData.filter(p => {
+    const codNum = Number(p.codigo) || 0;
     const cod = String(p.codigo || '').toLowerCase();
-    if (desde && cod < desde) return false;
-    if (hasta && cod > hasta) return false;
-    if (precioDesde && (p.APR3 || 0) < precioDesde) return false;
-    if (precioHasta && (p.APR3 || 0) > precioHasta) return false;
+    if (desde && codNum < desdeNum) return false;
+    if (hasta && codNum > hastaNum) return false;
     if (q && !cod.includes(q) && !String(p.nombre || '').toLowerCase().includes(q)) return false;
     return true;
   });
@@ -1949,8 +1946,6 @@ function exportarDBFCoffee(tipo) {
   if (!data.length) { toast('No hay productos filtrados para exportar.', 'error'); return; }
   const desdeCod = (document.getElementById('dbf-codigo-desde')?.value || '').trim() || 'inicio';
   const hastaCod = (document.getElementById('dbf-codigo-hasta')?.value || '').trim() || 'fin';
-  const desdePrecio = (document.getElementById('dbf-precio-desde')?.value || '').trim() || '0';
-  const hastaPrecio = (document.getElementById('dbf-precio-hasta')?.value || '').trim() || '0';
 
   if (tipo === 'excel') {
     const rows = data.map(p => `<tr>
@@ -1969,7 +1964,7 @@ function exportarDBFCoffee(tipo) {
       td{border:1px solid #ccc;padding:6px 10px}
     </style></head><body>
       <h2>DBF Coffee — ${data.length} productos</h2>
-      <p>Códigos: ${desdeCod} a ${hastaCod} · Precios ${desdePrecio}-${hastaPrecio} · Generado el ${new Date().toLocaleDateString('es-AR')}</p>
+      <p>Códigos: ${desdeCod} a ${hastaCod} · Generado el ${new Date().toLocaleDateString('es-AR')}</p>
       <table><thead><tr><th>Código</th><th>Nombre</th><th>Color</th><th>Talle</th><th>APR2</th><th>APR3 (Base)</th><th>APR4</th><th>APR5</th><th>APR6</th><th>Stock</th></tr></thead>
       <tbody>${rows}</tbody></table>
     </body></html>`;
@@ -1998,7 +1993,7 @@ function exportarDBFCoffee(tipo) {
     doc.setTextColor(20,50,48); doc.setFont('helvetica','bold'); doc.setFontSize(14);
     doc.text(`Productos: ${data.length}`,40,82);
     doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(110,130,128);
-    doc.text(`Códigos: ${desdeCod} a ${hastaCod} · Precios ${desdePrecio}-${hastaPrecio}`,40,98);
+    doc.text(`Códigos: ${desdeCod} a ${hastaCod}`,40,98);
     const head=[['Código','Nombre','Color','Talle','APR2','APR3 (Base)','APR4','APR5','APR6','Stock']];
     const body=data.map(p=>[String(p.codigo),String(p.nombre),String(p.color||''),String(p.talle||''),fmtMoney(p.APR2||0),fmtMoney(p.APR3||0),fmtMoney(p.APR4||0),fmtMoney(p.APR5||0),fmtMoney(p.APR6||0),String(p.stock)]);
     doc.autoTable({head,body,startY:112,margin:{left:40,right:40},theme:'grid',
