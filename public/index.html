@@ -500,13 +500,23 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <button class="filter-btn" onclick="setFilterStock('bajo-stock',this)">Stock bajo</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input type="text" id="stock-buscar" placeholder="🔍 Buscar por código, nombre, color, talle..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:240px;background:var(--cream)" oninput="renderStock()" onkeydown="if(event.key==='Enter'){event.preventDefault();renderStock()}">
-      <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Nuevo producto</button>
-      <button class="btn btn-ghost" onclick="importarStockLince()" style="padding:8px 14px;font-size:12px">⬆ Importar Coffee</button>
-      <button class="btn btn-ghost" onclick="importarStockLolitabb()" style="padding:8px 14px;font-size:12px">🐕 Importar LolitaBB</button>
-      <button class="btn btn-ghost" onclick="importarStockColegiales()" style="padding:8px 14px;font-size:12px">👔 Importar Colegiales</button>
-    </div>
+    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;flex:1;min-width:0">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1;min-width:0">
+           <input type="text" id="stock-buscar" placeholder="🔍 Buscar por código, nombre, color, talle..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;min-width:180px;background:var(--cream)" oninput="renderStock()" onkeydown="if(event.key==='Enter'){event.preventDefault();renderStock()}">
+           <input type="number" id="stock-codigo-desde" placeholder="Código desde" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:100px;background:var(--cream)" oninput="renderStock()">
+           <span style="font-size:12px;color:var(--text-soft);margin:0 4px;">a</span>
+           <input type="number" id="stock-codigo-hasta" placeholder="Código hasta" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:100px;background:var(--cream)" oninput="renderStock()">
+           <span id="filter-count" style="font-size:12px;color:var(--text-soft);min-width:100px;text-align:right">0 items</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+           <button class="btn btn-ghost" onclick="exportarStock('excel')" style="padding:6px 14px;font-size:12px;background:var(--mint-dark);color:white" title="Descargar listado visible en Excel">⬇ Excel</button>
+           <button class="btn btn-ghost" onclick="exportarStock('pdf')" style="padding:6px 14px;font-size:12px;background:#C0392B;color:white" title="Descargar listado visible en PDF">⬇ PDF</button>
+           <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px;min-width:140px">+ Nuevo producto</button>
+           <button class="btn btn-ghost" onclick="importarStockLince()" style="padding:8px 14px;font-size:12px">⬆ Importar Coffee</button>
+           <button class="btn btn-ghost" onclick="importarStockLolitabb()" style="padding:8px 14px;font-size:12px">🐕 Importar LolitaBB</button>
+           <button class="btn btn-ghost" onclick="importarStockColegiales()" style="padding:8px 14px;font-size:12px">👔 Importar Colegiales</button>
+        </div>
+</div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:18px">
     <div class="stat-card income"><div class="stat-label">Total productos</div><div class="stat-value" id="st-total">0</div></div>
@@ -2015,6 +2025,103 @@ function exportarDBFCoffee(tipo) {
     return;
   }
 }
+function exportarStock(tipo) {
+  if (!Array.isArray(db.stock) || !db.stock.length) recalcularStockUnion();
+  let items = db.stock;
+  if (filterStockProv === 'lince')      items = items.filter(p => (p.proveedor||'lince') === 'lince');
+  else if (filterStockProv === 'lolitabb') items = items.filter(p => p.proveedor === 'lolitabb');
+  if (filterStockProv === 'lolitabb' && filterStockCat !== 'todos') {
+    items = items.filter(p => (p.categoria||'') === filterStockCat);
+  }
+  if (filterStock === 'sin-stock') items = items.filter(p => p.cantidad <= 0);
+  else if (filterStock === 'bajo-stock') items = items.filter(p => p.cantidad > 0 && p.cantidad <= 3);
+  const buscar = (document.getElementById('stock-buscar')?.value || '').toLowerCase();
+  if (buscar) {
+    items = items.filter(p => (p.codigo||'').toLowerCase().includes(buscar) || (p.nombre||'').toLowerCase().includes(buscar) || (p.color||'').toLowerCase().includes(buscar) || (p.talle||'').toLowerCase().includes(buscar));
+  }
+  const desdeCod = parseInt(document.getElementById('stock-codigo-desde')?.value);
+  const hastaCod = parseInt(document.getElementById('stock-codigo-hasta')?.value);
+  if (!isNaN(desdeCod) || !isNaN(hastaCod)) {
+    items = items.filter(p => {
+      const cod = parseInt(p.codigo) || 0;
+      if (!isNaN(desdeCod) && cod < desdeCod) return false;
+      if (!isNaN(hastaCod) && cod > hastaCod) return false;
+      return true;
+    });
+  }
+  const data = items;
+  if (!data.length) { toast('No hay productos filtrados para exportar.', 'error'); return; }
+  const desdeStr = !isNaN(desdeCod) ? desdeCod : 'desde';
+  const hastaStr = !isNaN(hastaCod) ? hastaCod : 'hasta';
+
+  if (tipo === 'excel') {
+    const rows = data.map(p => `<tr>
+      <td>${esc(p.codigo)}</td><td>${esc(p.nombre)}</td>
+      <td>${esc(p.color||'')}</td><td>${esc(p.talle||'')}</td>
+      <td style="text-align:right">${fmtMoney(p.precio||0)}</td>
+      <td style="text-align:right">${p.cantidad}</td>
+      <td>${esc(p.categoria||'')}</td><td>${esc(p.proveedor||'')}</td>
+      <td style="text-align:right">${fmtMoney(p.precioSugerido||0)}</td>
+    </tr>`).join('');
+    const html = `<html><head><meta charset="utf-8"><style>
+      table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;width:100%}
+      th{background:#0B6E6E;color:#fff;padding:8px 10px;text-align:left}
+      td{border:1px solid #ccc;padding:6px 10px}
+    </style></head><body>
+      <h2>Stock — ${data.length} productos</h2>
+      <p>Códigos: ${desdeStr} a ${hastaStr} · Generado el ${new Date().toLocaleDateString('es-AR')}</p>
+      <table><thead><tr><th>Código</th><th>Nombre</th><th>Color</th><th>Talle</th><th>Precio</th><th>Stock</th><th>Categoría</th><th>Proveedor</th><th>Precio Sugerido</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+    </body></html>`;
+    const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `stock-${desdeStr}-a-${hastaStr}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Excel exportado ✓', 'success');
+    return;
+  }
+
+  if (tipo === 'pdf') {
+    if (typeof jspdf === 'undefined' || typeof jspdf.jsPDF === 'undefined') {
+      toast('No se pudo generar el PDF: revisá tu conexión a internet', 'error');
+      return;
+    }
+    const { jsPDF } = jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const pw = doc.internal.pageSize.getWidth();
+    const fechaHoy = fmtDate(new Date().toISOString().split('T')[0]);
+    doc.setFillColor(11,110,110); doc.rect(0,0,pw,60,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(18);
+    doc.text('Lolita Bebe',40,30);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    doc.text('Stock — Listado de productos',40,46);
+    doc.text(`Generado: ${fechaHoy}`,pw-40,30,{align:'right'});
+    doc.setTextColor(20,50,48); doc.setFont('helvetica','bold'); doc.setFontSize(14);
+    doc.text(`Productos: ${data.length}`,40,82);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(110,130,128);
+    doc.text(`Códigos: ${desdeStr} a ${hastaStr}`,40,98);
+    const head=[['Código','Nombre','Color','Talle','Precio','Stock','Categoría','Proveedor','Precio Sug.']];
+    const body=data.map(p=>[String(p.codigo),String(p.nombre),String(p.color||''),String(p.talle||''),fmtMoney(p.precio||0),String(p.cantidad),String(p.categoria||''),String(p.proveedor||''),fmtMoney(p.precioSugerido||0)]);
+    doc.autoTable({head,body,startY:112,margin:{left:40,right:40},theme:'grid',
+      styles:{fontSize:8,cellPadding:5,textColor:[20,50,48],lineColor:[220,237,233],lineWidth:0.5},
+      headStyles:{fillColor:[11,110,110],textColor:[255,255,255],fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[247,251,250]},
+      didDrawPage:d=>{
+        doc.setFontSize(8); doc.setTextColor(150,165,163);
+        doc.text(`Página ${d.pageNumber} de ${doc.internal.getNumberOfPages()}`,pw-40,doc.internal.pageSize.getHeight()-20,{align:'right'});
+      }
+    });
+    try {
+      doc.save(`stock-${desdeStr}-a-${hastaStr}.pdf`);
+      toast('PDF exportado ✓', 'success');
+    } catch (e) {
+      console.error('Error generando PDF Stock:', e);
+      toast('No se pudo generar el PDF: ' + (e.message || e), 'error');
+    }
+    return;
+  }
+}
 let dbfLolitaData = [];
 let dbflMostrarL3 = false;
 let dbflL3Init = false;
@@ -2481,6 +2588,20 @@ function renderStock() {
     items = items.filter(p => (p.codigo||'').toLowerCase().includes(buscar) || (p.nombre||'').toLowerCase().includes(buscar) || (p.color||'').toLowerCase().includes(buscar) || (p.talle||'').toLowerCase().includes(buscar));
     paginaStock = 1;
   }
+  const desdeCod = parseInt(document.getElementById('stock-codigo-desde')?.value);
+  const hastaCod = parseInt(document.getElementById('stock-codigo-hasta')?.value);
+  if (!isNaN(desdeCod) || !isNaN(hastaCod)) {
+    items = items.filter(p => {
+      const cod = parseInt(p.codigo) || 0;
+      if (!isNaN(desdeCod) && cod < desdeCod) return false;
+      if (!isNaN(hastaCod) && cod > hastaCod) return false;
+      return true;
+    });
+    paginaStock = 1;
+  }
+  const filteredCount = items.length;
+  const filterCountEl = document.getElementById('filter-count');
+  if (filterCountEl) filterCountEl.textContent = filteredCount + ' items';
 
   items.sort((a, b) => {
     let va = (a[stockSortCol]||''), vb = (b[stockSortCol]||'');
