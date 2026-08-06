@@ -497,7 +497,6 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
       <div style="display:flex;gap:6px;flex-wrap:wrap" id="stock-status-filters">
         <button class="filter-btn active" onclick="setFilterStock('todos',this)">Todos</button>
         <button class="filter-btn" onclick="setFilterStock('sin-stock',this)">Sin stock</button>
-        <button class="filter-btn" onclick="setFilterStock('bajo-stock',this)">Stock bajo</button>
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;flex:1;min-width:0">
@@ -509,12 +508,12 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
            <span id="filter-count" style="font-size:12px;color:var(--text-soft);min-width:100px;text-align:right">0 items</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-           <button class="btn btn-ghost" onclick="exportarStock('excel')" style="padding:6px 14px;font-size:12px;background:var(--mint-dark);color:white" title="Descargar listado visible en Excel">⬇ Excel</button>
-           <button class="btn btn-ghost" onclick="exportarStock('pdf')" style="padding:6px 14px;font-size:12px;background:#C0392B;color:white" title="Descargar listado visible en PDF">⬇ PDF</button>
-           <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px;min-width:140px">+ Nuevo producto</button>
-           <button class="btn btn-ghost" onclick="importarStockLince()" style="padding:8px 14px;font-size:12px">⬆ Importar Coffee</button>
-           <button class="btn btn-ghost" onclick="importarStockLolitabb()" style="padding:8px 14px;font-size:12px">🐕 Importar LolitaBB</button>
-           <button class="btn btn-ghost" onclick="importarStockColegiales()" style="padding:8px 14px;font-size:12px">👔 Importar Colegiales</button>
+           <button class="btn btn-ghost" onclick="exportarStock('excel')" style="padding:6px 12px;font-size:12px;background:var(--mint-dark);color:white" title="Descargar listado visible en Excel">⬇ Excel</button>
+           <button class="btn btn-ghost" onclick="exportarStock('pdf')" style="padding:6px 12px;font-size:12px;background:#C0392B;color:white" title="Descargar listado visible en PDF">⬇ PDF</button>
+           <button class="btn btn-primary" onclick="openModal('modal-producto')" style="padding:8px 16px;font-size:13px">+ Producto</button>
+           <button class="btn btn-ghost" onclick="importarStockLince()" style="padding:3px 8px;font-size:11px" title="Importar Coffee (DBF)">Imp. Coffee</button>
+           <button class="btn btn-ghost" onclick="importarStockLolitabb()" style="padding:3px 8px;font-size:11px" title="Importar LolitaBB">Imp. LolitaBB</button>
+           <button class="btn btn-ghost" onclick="importarStockColegiales()" style="padding:3px 8px;font-size:11px" title="Importar Colegiales">Imp. Colegiales</button>
         </div>
 </div>
   </div>
@@ -532,6 +531,9 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
         <th onclick="ordenarStock('talle')" style="cursor:pointer;user-select:none">Talle <span id="sort-talle" class="sort-arrow"></span></th>
         <th onclick="ordenarStock('color')" style="cursor:pointer;user-select:none">Color <span id="sort-color" class="sort-arrow"></span></th>
         <th onclick="ordenarStock('precio')" style="cursor:pointer;user-select:none">Precio <span id="sort-precio" class="sort-arrow"></span></th>
+        <th onclick="ordenarStock('precioSugerido')" style="cursor:pointer;user-select:none">Lista 3 <span id="sort-precioSugerido" class="sort-arrow"></span></th>
+        <th onclick="ordenarStock('precioContado')" style="cursor:pointer;user-select:none">Lista 4 <span id="sort-precioContado" class="sort-arrow"></span></th>
+        <th onclick="ordenarStock('precioTarjeta')" style="cursor:pointer;user-select:none">Lista 5 <span id="sort-precioTarjeta" class="sort-arrow"></span></th>
         <th onclick="ordenarStock('cantidad')" style="cursor:pointer;user-select:none">Stock <span id="sort-cantidad" class="sort-arrow"></span></th>
         <th>Acciones</th>
       </tr></thead>
@@ -2062,9 +2064,11 @@ function exportarStock(tipo) {
       <td>${esc(p.codigo)}</td><td>${esc(p.nombre)}</td>
       <td>${esc(p.color||'')}</td><td>${esc(p.talle||'')}</td>
       <td style="text-align:right">${fmtMoney(p.precio||0)}</td>
+      <td style="text-align:right">${fmtMoney(p.precioSugerido||0)}</td>
+      <td style="text-align:right">${fmtMoney(p.precioContado||0)}</td>
+      <td style="text-align:right">${fmtMoney(p.precioTarjeta||0)}</td>
       <td style="text-align:right">${p.cantidad}</td>
       <td>${esc(p.categoria||'')}</td><td>${esc(p.proveedor||'')}</td>
-      <td style="text-align:right">${fmtMoney(p.precioSugerido||0)}</td>
     </tr>`).join('');
     const html = `<html><head><meta charset="utf-8"><style>
       table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:12px;width:100%}
@@ -2073,7 +2077,7 @@ function exportarStock(tipo) {
     </style></head><body>
       <h2>Stock — ${data.length} productos</h2>
       <p>Códigos: ${desdeStr} a ${hastaStr} · Generado el ${new Date().toLocaleDateString('es-AR')}</p>
-      <table><thead><tr><th>Código</th><th>Nombre</th><th>Color</th><th>Talle</th><th>Precio</th><th>Stock</th><th>Categoría</th><th>Proveedor</th><th>Precio Sugerido</th></tr></thead>
+      <table><thead><tr><th>Código</th><th>Nombre</th><th>Color</th><th>Talle</th><th>Precio</th><th>Lista 3</th><th>Lista 4</th><th>Lista 5</th><th>Stock</th><th>Categoría</th><th>Proveedor</th></tr></thead>
       <tbody>${rows}</tbody></table>
     </body></html>`;
     const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel' });
@@ -2104,8 +2108,8 @@ function exportarStock(tipo) {
     doc.text(`Productos: ${data.length}`,40,82);
     doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(110,130,128);
     doc.text(`Códigos: ${desdeStr} a ${hastaStr}`,40,98);
-    const head=[['Código','Nombre','Color','Talle','Precio','Stock','Categoría','Proveedor','Precio Sug.']];
-    const body=data.map(p=>[String(p.codigo),String(p.nombre),String(p.color||''),String(p.talle||''),fmtMoney(p.precio||0),String(p.cantidad),String(p.categoria||''),String(p.proveedor||''),fmtMoney(p.precioSugerido||0)]);
+    const head=[['Código','Nombre','Color','Talle','Precio','Lista 3','Lista 4','Lista 5','Stock','Categoría','Proveedor']];
+    const body=data.map(p=>[String(p.codigo),String(p.nombre),String(p.color||''),String(p.talle||''),fmtMoney(p.precio||0),fmtMoney(p.precioSugerido||0),fmtMoney(p.precioContado||0),fmtMoney(p.precioTarjeta||0),String(p.cantidad),String(p.categoria||''),String(p.proveedor||'')]);
     doc.autoTable({head,body,startY:112,margin:{left:40,right:40},theme:'grid',
       styles:{fontSize:8,cellPadding:5,textColor:[20,50,48],lineColor:[220,237,233],lineWidth:0.5},
       headStyles:{fillColor:[11,110,110],textColor:[255,255,255],fontStyle:'bold'},
@@ -2608,7 +2612,7 @@ function renderStock() {
 
   items.sort((a, b) => {
     let va = (a[stockSortCol]||''), vb = (b[stockSortCol]||'');
-    if (stockSortCol === 'precio' || stockSortCol === 'cantidad') { va = parseFloat(va)||0; vb = parseFloat(vb)||0; }
+    if (stockSortCol === 'precio' || stockSortCol === 'cantidad' || stockSortCol === 'precioSugerido' || stockSortCol === 'precioContado' || stockSortCol === 'precioTarjeta') { va = parseFloat(va)||0; vb = parseFloat(vb)||0; }
     else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
     if (va < vb) return stockSortDir === 'asc' ? -1 : 1;
     if (va > vb) return stockSortDir === 'asc' ? 1 : -1;
@@ -2639,7 +2643,7 @@ function renderStock() {
   if (!tbody) return;
 
   if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-soft)">No se encontraron productos.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-soft)">No se encontraron productos.</td></tr>';
     const pg = document.getElementById('stock-paginacion');
     if (pg) pg.innerHTML = '';
     return;
@@ -2663,6 +2667,9 @@ function renderStock() {
       '<td>' + esc(p.talle||'-') + '</td>' +
       '<td>' + esc(p.color||'-') + '</td>' +
       '<td style="font-weight:500">' + fmtMoney(p.precio||0) + '</td>' +
+      '<td>' + fmtMoney(p.precioSugerido||0) + '</td>' +
+      '<td>' + fmtMoney(p.precioContado||0) + '</td>' +
+      '<td>' + fmtMoney(p.precioTarjeta||0) + '</td>' +
       '<td><span class="stock-badge ' + stockClass + '">' + p.cantidad + ' - ' + stockLabel + '</span></td>' +
       '<td>' +
         '<button class="btn btn-ghost stock-btn" style="padding:4px 10px;font-size:12px" data-action="editar" data-id="' + p.id + '" onclick="editarProducto(this.dataset.id)">EDIT</button>' +
