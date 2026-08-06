@@ -503,9 +503,9 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
     <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;flex:1;min-width:0">
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1;min-width:0">
            <input type="text" id="stock-buscar" placeholder="🔍 Buscar por código, nombre, color, talle..." style="padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;min-width:180px;background:var(--cream)" oninput="renderStock()" onkeydown="if(event.key==='Enter'){event.preventDefault();renderStock()}">
-           <input type="number" id="stock-codigo-desde" placeholder="Código desde" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:100px;background:var(--cream)" oninput="renderStock()">
-           <span style="font-size:12px;color:var(--text-soft);margin:0 4px;">a</span>
-           <input type="number" id="stock-codigo-hasta" placeholder="Código hasta" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:100px;background:var(--cream)" oninput="renderStock()">
+           <input type="text" id="stock-codigo-desde" inputmode="numeric" pattern="[0-9]*" placeholder="Código desde" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:100px;background:var(--cream)" oninput="renderStock()">
+            <span style="font-size:12px;color:var(--text-soft);margin:0 4px;">a</span>
+            <input type="text" id="stock-codigo-hasta" inputmode="numeric" pattern="[0-9]*" placeholder="Código hasta" style="padding:6px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;width:100px;background:var(--cream)" oninput="renderStock()">
            <span id="filter-count" style="font-size:12px;color:var(--text-soft);min-width:100px;text-align:right">0 items</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
