@@ -8,13 +8,21 @@ const PORT      = process.env.PORT || 3000;
 const PUBLIC    = path.join(__dirname, 'public');
 const BACKUP_DIR= path.join(__dirname, 'backups');
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL ? process.env.SUPABASE_URL.trim().replace(/^["']|["']$/g, '') : '';
+const SUPABASE_KEY = process.env.SUPABASE_KEY ? process.env.SUPABASE_KEY.trim().replace(/^["']|["']$/g, '') : '';
 const TABLE = 'app_data';
 
 function supabaseRequest(method, body) {
   return new Promise((resolve, reject) => {
-    const url = new URL(`${SUPABASE_URL}/rest/v1/${TABLE}`);
+    if (!SUPABASE_URL) {
+      return reject(new Error('SUPABASE_URL no está configurada o está vacía'));
+    }
+    let url;
+    try {
+      url = new URL(`${SUPABASE_URL}/rest/v1/${TABLE}`);
+    } catch (err) {
+      return reject(new Error(`SUPABASE_URL inválida ("${SUPABASE_URL}"): ${err.message}`));
+    }
     if (method === 'GET') url.searchParams.set('select', '*');
     const options = {
       hostname: url.hostname,
