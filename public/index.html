@@ -946,6 +946,9 @@ function goTo(page) {
   document.getElementById('page-title').textContent = PAGE_TITLES[page] || page;
   closeSidebar();
   renderPage(page);
+  if (page === 'stock') {
+    setTimeout(() => document.getElementById('stock-buscar')?.focus(), 150);
+  }
 }
 
 function renderPage(page) {
@@ -2675,7 +2678,6 @@ function renderStock() {
     const mostrando = (desde+1) + '-' + Math.min(desde+STOCK_POR_PAGINA, items.length) + ' de ' + items.length;
     pg.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;color:var(--text-mid)"><span>' + mostrando + '</span><div style="display:flex;gap:6px"><button class="btn btn-ghost" style="padding:4px 12px" onclick="cambiarPaginaStock(-1)" ' + (paginaStock<=1?'disabled':'') + '>Ant</button><span style="padding:4px 10px;background:var(--cream-dark);border-radius:var(--radius-sm)">' + paginaStock + '/' + totalPags + '</span><button class="btn btn-ghost" style="padding:4px 12px" onclick="cambiarPaginaStock(1)" ' + (paginaStock>=totalPags?'disabled':'') + '>Sig</button></div></div>';
   }
-  setTimeout(() => document.getElementById('stock-buscar')?.focus(), 100);
 }
 
 function ordenarStock(col) {
