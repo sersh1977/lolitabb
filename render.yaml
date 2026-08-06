@@ -4,8 +4,16 @@ services:
     runtime: node
     region: ohio
     plan: free
+    healthCheckPath: /api/data
     buildCommand: npm install
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
+      # Configurar en el dashboard de Render (secrets NO van en el repo):
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: API_TOKEN
+        sync: false
